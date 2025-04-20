@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Usuarios | {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Gestión de Usuarios</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'crear_usuario' %}" class="btn btn-primary">
+            <i class="fas fa-user-plus me-1"></i> Agregar Usuario
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Usuario</th>
+                        <th>Teléfono</th>
+                        <th>Rol</th>
+                        <th>Estado</th>
+                        <th>Último Acceso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in usuarios %}
+                    <tr>
+                        <td>{{ user.nombre }}</td>
+                        <td>{{ user.usuario }}</td>
+                        <td>{{ user.telefono }}</td>
+                        <td>{{ user.rol }}</td>
+                        <td>
+                            {% if user.estado %}
+                                <span class="badge bg-success">Activo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.ultimo_ingreso|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
