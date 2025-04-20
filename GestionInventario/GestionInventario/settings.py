@@ -53,6 +53,9 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'GestionInventario.urls'
 
+LOGIN_REDIRECT_URL = '/usuarios/' #Ruta despues del login,modificar cuando este listo el HOME o la pagina principal
+LOGOUT_REDIRECT_URL = '/login/' #Al cerrar sesión te redirige al login
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
