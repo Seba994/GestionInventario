@@ -33,8 +33,14 @@ class PersonalForm(UserCreationForm):
             visible.field.widget.attrs['class'] = 'form-control'
 
 
+
 class RolForm(forms.ModelForm):
     class Meta:
         model = Rol
         fields = ['rol']
-
+        labels = {
+            'rol': 'Nombre del Rol',
+        }
+        widgets = {
+            'rol': forms.TextInput(attrs={'class': 'form-control'}),
+        }
