@@ -1,2 +1,3 @@
-django
-mysqlclient
+django          #Framework
+mysqlclient     #Conección a la BD
+python-dotenv   #Variables de entorno
