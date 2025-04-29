@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from .forms import PersonalForm, RolForm
 from .models import Personal
 
+@login_required(login_url='login')
 def crear_personal(request):
     if request.method == 'POST':
         form = PersonalForm(request.POST)
@@ -24,6 +25,7 @@ def crear_personal(request):
     return render(request, 'Registros/crear_personal.html', 
                   {'form': form, 'user':data_user})
 
+@login_required(login_url='login')
 def crear_rol(request):
     if request.method == 'POST':
         form = RolForm(request.POST)
