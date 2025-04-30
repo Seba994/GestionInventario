@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
-from .forms import PersonalForm, RolForm
-from .models import Personal
+from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm
+from .models import Personal, Consola, Ubicacion, Juego
 
 def crear_personal(request):
     if request.method == 'POST':
@@ -67,4 +67,52 @@ def gestion_usuarios(request):
         'usuarios': usuarios_data,
         'user': data_user
     })
+
+# Vista para registrar nuevas consolas
+def registrar_consola(request):
+    if request.method == 'POST':
+        form = ConsolaForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('lista_consolas')
+    else:
+        form = ConsolaForm()
+    return render(request, 'consolas/registrar.html', {'form': form})
+
+# Vista para listar consolas
+def lista_consolas(request):
+    consolas = Consola.objects.all()
+    return render(request, 'consolas/lista.html', {'consolas': consolas})
+
+# Vista para registrar nuevas ubicación
+def registrar_ubicacion(request):
+    if request.method == 'POST':
+        form = UbicacionForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('lista_ubicaciones')
+    else:
+        form = UbicacionForm()
+    return render(request, 'ubicaciones/registrar.html', {'form': form})
+
+# Vista para listar ubicaciones
+def lista_ubicaciones(request):
+    ubicaciones = Ubicacion.objects.all()
+    return render(request, 'ubicaciones/lista.html', {'ubicaciones': ubicaciones})
+
+# Vista para registrar juego
+def registrar_juego(request):
+    if request.method == 'POST':
+        form = JuegoForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('lista_juegos')
+    else:
+        form = JuegoForm()
+    return render(request, 'juegos/registrar.html', {'form': form})
+
+# Vista para listar juegos
+def lista_juegos(request):
+    juegos = Juego.objects.all()
+    return render(request, 'juegos/lista.html', {'juegos': juegos})
 
