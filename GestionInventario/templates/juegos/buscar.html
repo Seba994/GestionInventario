@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">
+                <i class="fas fa-search me-2"></i> Buscar Juegos
+            </h3>
+        </div>
+        
+        <div class="card-body">
+            <!-- Formulario de búsqueda -->
+            <form method="get" class="mb-4">
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control form-control-lg" 
+                           placeholder="Escribe el nombre del juego..." value="{{ request.GET.search }}">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+            </form>
+
+            <!-- Resultados -->
+            {% if juegos %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Consola</th>
+                            <th>Stock</th>
+                            <th>Ubicación</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for juego in juegos %}
+                        <tr>
+                            <td>{{ juego.nombreJuego }}</td>
+                            <td>{{ juego.consola.nombreConsola }}</td>
+                            <td class="{{ juego.unidades.cantidad|yesno:'text-success,text-danger' }}">
+                                {{ juego.unidades.cantidad }}
+                            </td>
+                            <td>{{ juego.ubicacion.nombreUbicacion }}</td>
+                            <td>
+                                <a href="{% url 'editar_juego' juego.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                No se encontraron juegos con ese nombre.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

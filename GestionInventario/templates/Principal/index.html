@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <header class="text-center mb-5">
+        <h1 class="display-4">Sistema de Gestión de Inventario</h1>
+        <p class="lead">Bienvenido al sistema de control de inventario de juegos y consolas</p>
+    </header>
+
+    <div class="row">
+        <!-- Tarjeta de Juegos -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">Gestión de Juegos</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <a href="{% url 'registrar_juego' %}" class="text-decoration-none">
+                                <i class="fas fa-plus-circle me-2"></i> Registrar nuevo juego
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'lista_juegos_con_stock' %}" class="text-decoration-none">
+                                <i class="fas fa-list me-2"></i> Ver todos los juegos
+                            </a>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta de Consolas -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow">
+                <div class="card-header bg-success text-white">
+                    <h3 class="card-title mb-0">Gestión de Consolas</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <a href="{% url 'registrar_consola' %}" class="text-decoration-none">
+                                <i class="fas fa-plus-circle me-2"></i> Agregar consola
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'lista_consolas' %}" class="text-decoration-none">
+                                <i class="fas fa-list me-2"></i> Ver todas las consolas
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta de Administración -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow">
+                <div class="card-header bg-info text-white">
+                    <h3 class="card-title mb-0">Administración</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <a href="{% url 'lista_ubicaciones' %}" class="text-decoration-none">
+                                <i class="fas fa-map-marker-alt me-2"></i> Gestionar ubicaciones
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'gestion_usuarios' %}" class="text-decoration-none">
+                                <i class="fas fa-users me-2"></i> Gestionar usuarios
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="/admin/" class="text-decoration-none">
+                                <i class="fas fa-cog me-2"></i> Panel de administración
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-5 pt-3 text-center text-muted">
+        <p>Sistema de Inventario &copy; {% now "Y" %}</p>
+    </footer>
+</div>
+{% endblock %}
+   

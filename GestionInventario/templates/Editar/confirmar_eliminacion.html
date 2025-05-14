@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmar Eliminación - {{ juego.nombreJuego }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">¿Estás seguro de eliminar este juego?</h5>
+                    
+                    <div class="card mb-3">
+                        <div class="row g-0">
+                            <div class="col-md-4">
+                                {% if juego.imagen %}
+                                    <img src="{{ juego.imagen.url }}" class="img-fluid rounded-start" alt="{{ juego.nombreJuego }}">
+                                {% else %}
+                                    <div class="bg-light d-flex align-items-center justify-content-center h-100">
+                                        <i class="fas fa-gamepad fa-3x text-muted"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-8">
+                                <div class="card-body">
+                                    <h6 class="card-text">{{ juego.nombreJuego }}</h6>
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            {{ juego.consola.nombreConsola }} | 
+                                            {{ juego.distribucion.siglaDistribucion }}
+                                        </small>
+                                    </p>
+                                    <p class="card-text">
+                                        <span class="badge bg-{% if juego.estado.nombreEstado == 'Activo' %}success{% else %}secondary{% endif %}">
+                                            {{ juego.estado.nombreEstado }}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="text-danger">
+                        <i class="fas fa-exclamation-circle"></i> 
+                        Esta acción no se puede deshacer. Todos los datos relacionados se perderán.
+                    </p>
+                    
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'detalle_juego' juego.id %}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash-alt"></i> Confirmar Eliminación
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

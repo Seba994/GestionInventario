@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de Juego - {{ juego.nombreJuego }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Detalle de Juego</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'listar_juegos_con_stock' %}" class="btn btn-sm btn-outline-secondary me-2">
+            <i class="fas fa-arrow-left"></i> Volver al listado
+        </a>
+        <a href="{% url 'editar_juego' juego.id %}" class="btn btn-sm btn-outline-primary me-2">
+            <i class="fas fa-edit"></i> Editar
+        </a>
+        <a href="{% url 'eliminar_juego' juego.id %}" class="btn btn-sm btn-outline-danger">
+            <i class="fas fa-trash-alt"></i> Eliminar
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            {% if juego.imagen %}
+                <img src="{{ juego.imagen.url }}" class="card-img-top" alt="{{ juego.nombreJuego }}" style="max-height: 300px; object-fit: contain;">
+            {% else %}
+                <div class="text-center py-5 bg-light">
+                    <i class="fas fa-gamepad fa-5x text-muted"></i>
+                    <p class="mt-2">Sin imagen</p>
+                </div>
+            {% endif %}
+            
+            <div class="card-body">
+                <h5 class="card-title">{{ juego.nombreJuego }}</h5>
+                <p class="card-text text-muted">
+                    {{ juego.distribucion.localidadDistribucion }} | {{ juego.clasificacion.descripcionClasificacion }}
+                </p>
+            </div>
+            
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">
+                    <strong>Código:</strong> {{ juego.codigoDeBarra|default:"No asignado" }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Consola:</strong> {{ juego.consola.nombreConsola }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Marca:</strong> {{ juego.consola.marcaConsola }}
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Información de Inventario</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <h6>Stock Actual</h6>
+                            <div class="progress" style="height: 30px;">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                                    {{ juego.unidades.cantidad }} unidades
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6>Ubicación</h6>
+                            <p>
+                                <i class="fas fa-map-marker-alt"></i> 
+                                {{ juego.ubicacion.nombreUbicacion }}
+                            </p>
+                            <small class="text-muted">{{ juego.ubicacion.descripcionUbicacion }}</small>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <h6>Estado</h6>
+                            {% if juego.estado.nombreEstado == "Activo" %}
+                                <span class="badge bg-success">Activo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6>Distribución</h6>
+                            <p>
+                                {{ juego.distribucion.siglaDistribucion }} - 
+                                {{ juego.distribucion.localidadDistribucion }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
