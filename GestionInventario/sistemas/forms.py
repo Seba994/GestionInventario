@@ -120,3 +120,14 @@ class JuegoForm(forms.ModelForm):
                 self.add_error('codigoDeBarra', "Este código de barra ya está en uso.")
 
         return cleaned_data
+    
+from django import forms
+from .models import Juego  # Asegúrate de importar tu modelo de producto
+
+class ModificarJuegoForm(forms.ModelForm):
+    class Meta:
+        model = Juego
+        fields = '__all__'  
+        widgets = {
+            'descripcion': forms.Textarea(attrs={'rows': 3}),
+        }

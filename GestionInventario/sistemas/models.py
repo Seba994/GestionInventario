@@ -99,5 +99,7 @@ class Juego(models.Model):
     imagen = models.ImageField(upload_to='juegos/')
 
     def __str__(self):
-        return self.nombreJuego    
+        return self.nombreJuego
+    
+ 
     

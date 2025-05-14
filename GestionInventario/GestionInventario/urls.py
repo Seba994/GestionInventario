@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path
 from sistemas import views
 from django.contrib.auth import views as auth_views
+from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -27,7 +28,18 @@ urlpatterns = [
     path('nuevo_rol/', views.crear_rol),
     path('usuarios/', views.gestion_usuarios, name="gestion_usuarios"),
     path('consolas/registrar/', views.registrar_consola, name='registrar_consola'),
+    path('consolas/', views.lista_consolas, name='lista_consolas'),
     path('ubicaciones/registrar/', views.registrar_ubicacion, name='registrar_ubicacion'),
+    path('ubicaciones/', views.lista_ubicaciones, name='lista_ubicaciones'),
     path('juegos/registrar/', views.registrar_juego, name='registrar_juego'),
-    path('juegos/', views.lista_juegos, name='lista_juegos'),
+    path('juegos/con-stock/', views.lista_juegos_con_stock, name='lista_juegos_con_stock'),
+    path('juegos/editar/<int:pk>/', views.editar_juego, name='editar_juego'),
+    path('juegos/eliminar/<int:pk>/', views.eliminar_juego, name='eliminar_juego'),
+    path('juegos/detalle/<int:pk>/', views.detalle_juego, name='detalle_juego'),
+    path('juegos/buscar/', views.buscar_juego, name='buscar_juego'),
+    path('juegos/buscar-ubicacion/', views.buscar_juego_ubicacion, name='buscar_juego_ubicacion'),
+    path('juegos/buscar-consola/', views.buscar_juego_consola, name='buscar_consola'),
+    path('juegos/buscar-rol/', views.buscar_juego_rol, name='buscar_juego_rol'),
+    path('principal/', views.principal, name='inicio'),
+    path('', RedirectView.as_view(url='pagina_principal/'))
 ]
