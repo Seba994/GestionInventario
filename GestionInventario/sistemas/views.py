@@ -1,7 +1,9 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm
-from .models import Personal, Consola, Ubicacion, Juego
+from .models import Personal, Consola, Ubicacion, Juego, Clasificacion
+from django.http import JsonResponse
+from django.contrib import messages
 
 def crear_personal(request):
     if request.method == 'POST':
@@ -74,10 +76,12 @@ def registrar_consola(request):
         form = ConsolaForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('lista_consolas')
+            messages.success(request, "La consola se ha registrado correctamente.")
+            return redirect('registrar_consola')
     else:
         form = ConsolaForm()
-    return render(request, 'consolas/registrar.html', {'form': form})
+    return render(request, 'Registros/registrar_consolas.html', {'form': form})
+
 
 # Vista para listar consolas
 def lista_consolas(request):
@@ -101,6 +105,7 @@ def lista_ubicaciones(request):
     return render(request, 'ubicaciones/lista.html', {'ubicaciones': ubicaciones})
 
 # Vista para registrar juego
+@login_required(login_url='login')
 def registrar_juego(request):
     if request.method == 'POST':
         form = JuegoForm(request.POST, request.FILES)
@@ -109,10 +114,14 @@ def registrar_juego(request):
             return redirect('lista_juegos')
     else:
         form = JuegoForm()
-    return render(request, 'juegos/registrar.html', {'form': form})
+    return render(request, 'Registros/registrar_juego.html', {'form': form})
 
 # Vista para listar juegos
 def lista_juegos(request):
     juegos = Juego.objects.all()
     return render(request, 'juegos/lista.html', {'juegos': juegos})
 
+def obtener_clasificaciones(request):
+    distribucion_id = request.GET.get('distribucion_id')
+    clasificaciones = Clasificacion.objects.filter(distribucion_id=distribucion_id).values('idClasificacion', 'descripcionClasificacion')
+    return JsonResponse(list(clasificaciones), safe=False)
