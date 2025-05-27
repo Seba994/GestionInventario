@@ -30,4 +30,5 @@ urlpatterns = [
     path('ubicaciones/registrar/', views.registrar_ubicacion, name='registrar_ubicacion'),
     path('juegos/registrar/', views.registrar_juego, name='registrar_juego'),
     path('juegos/', views.lista_juegos, name='lista_juegos'),
+    path('ajax/clasificaciones/', views.obtener_clasificaciones, name='ajax_clasificaciones'),
 ]
