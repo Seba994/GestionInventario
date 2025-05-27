@@ -1,0 +1,42 @@
+INSERT INTO sistemas_consola (idConsola, nombreConsola, marcaConsola)
+VALUES 
+  (1, 'Playstation 3', 'Sony'),
+  (2, 'Playstation 4', 'Sony'),
+  (3, 'Playstation 5', 'Sony'),
+  (4, 'Xbox Series X', 'Microsoft'),
+  (5, 'Xbox One', 'Microsoft'),
+  (6, 'Switch', 'Nintendo'),
+  (7, 'Wii', 'Nintendo'),
+  (8, 'Wii U', 'Nintendo'),
+  (9, '3DS', 'Nintendo');
+
+INSERT INTO sistemas_distribucion (idDistribucion, localidadDistribucion, siglaDistribucion)
+VALUES 
+  (1, 'Europea', 'EU'),
+  (2, 'Americana', 'US'),
+  (3, 'Japonesa', 'JP'),
+  (4, 'Global', 'GL');
+
+INSERT INTO sistemas_clasificacion (idClasificacion, Distribucion_id, descripcionClasificacion)
+VALUES 
+  (1, 2, 'E'),
+  (2, 2, 'E+10'),
+  (3, 2, 'T'),
+  (4, 2, 'M'),
+  (5, 2, 'A'),
+  (6, 2, 'C'),
+  (7, 2, 'RP');
+
+
+INSERT INTO sistemas_clasificacion (idClasificacion, Distribucion_id, descripcionClasificacion)
+VALUES 
+  (8, 1, '3'),
+  (9, 1, '7'),
+  (10, 1, '12'),
+  (11, 1, '16'),
+  (12, 1, '18');
+
+INSERT INTO sistemas_estado (idEstado, nombreEstado)
+VALUES 
+  (1, 'Activo'),
+  (2, 'Descontinuado');
