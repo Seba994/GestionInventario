@@ -119,7 +119,7 @@ def registrar_juego(request):
             return redirect('lista_juegos')
     else:
         form = JuegoForm()
-    return render(request, 'juegos/registrar.html', {'form': form})
+    return render(request, 'juegos/registrar_juego.html', {'form': form})
  
 
 # Vista para listar juegos
