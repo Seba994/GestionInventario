@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Buscar Consola{% endblock %}
+{% block content %}
+<div class="container">
+	<div class="row">
+		<div class="col-md-12">
+			<h1>Buscar Consola</h1>
+			<hr>
+			<form action="{% url 'buscar_consola' %}" method="POST">
+				{% csrf_token %}
+				<div class="form-group">
+					<label for="id_consola">Consola:</label>
+					<input type="text" class="form-control" id="id_consola" name="consola" placeholder="Ingrese el nombre de la consola">
+				</div>
+				<button type="submit" class="btn btn-primary">Buscar</button>
+			</form>
+		</div>
+	</div>
+</div>
+{% endblock %}
