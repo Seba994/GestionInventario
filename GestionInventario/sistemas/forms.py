@@ -121,15 +121,6 @@ class JuegoForm(forms.ModelForm):
 
         return cleaned_data
 
-class ModificarJuegoForm(forms.ModelForm):
-    class Meta:
-        model = Juego
-        fields = '__all__'  
-        widgets = {
-            'descripcion': forms.Textarea(attrs={'rows': 3}),
-        }
-
-
     def save(self, commit=True):
         juego = super().save(commit=False)
         juego.estado = Estado.objects.get(nombreEstado='Activo')
@@ -160,4 +151,13 @@ class ModificarJuegoForm(forms.ModelForm):
         if not codigo.isdigit():
             raise forms.ValidationError("El código de barra debe contener solo números.")
         return codigo
+
+class ModificarJuegoForm(forms.ModelForm):
+    class Meta:
+        model = Juego
+        fields = '__all__'  
+        widgets = {
+            'descripcion': forms.Textarea(attrs={'rows': 3}),
+        }
+
 
