@@ -1,14 +1,14 @@
 from multiprocessing import context
 from pyexpat.errors import messages
-from django.shortcuts import render
 from django.shortcuts import get_object_or_404, render, redirect
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
-from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm
+from django.contrib import messages
+from django.http import HttpResponse, JsonResponse
+from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm
 from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
 import os
+
 
 def crear_personal(request):
     if request.method == 'POST':
@@ -81,10 +81,12 @@ def registrar_consola(request):
         form = ConsolaForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('lista_consolas')
+            messages.success(request, "La consola se ha registrado correctamente.")
+            return redirect('registrar_consola')
     else:
         form = ConsolaForm()
-    return render(request, 'consolas/registrar.html', {'form': form})
+    return render(request, 'Registros/registrar_consolas.html', {'form': form})
+
 
 # Vista para listar consolas
 def lista_consolas(request):
@@ -108,6 +110,7 @@ def lista_ubicaciones(request):
     return render(request, 'ubicaciones/lista.html', {'ubicaciones': ubicaciones})
 
 # Vista para registrar juego
+@login_required(login_url='login')
 def registrar_juego(request):
     if request.method == 'POST':
         form = JuegoForm(request.POST, request.FILES)
@@ -117,34 +120,13 @@ def registrar_juego(request):
     else:
         form = JuegoForm()
     return render(request, 'juegos/registrar.html', {'form': form})
-  
+ 
+
 # Vista para listar juegos
 def lista_juegos(request):
     juegos = Juego.objects.all()
     return render(request, 'Editar/lista_juegos_con_stock.html', {'juegos': juegos})
 
-#Vista para ediatr producto y que solo pueda hacerlo usuario registrado
-@login_required
-#def editar_juego(request, pk):
-#    #error 404 si no existe
-#    juego = get_object_or_404(Juego, pk=pk)
-#    
-#    if request.method == 'POST':
-#      
-#        form = JuegoForm(request.POST, request.FILES, instance=juego)
-#        if form.is_valid():
-#            form.save()
-#            return redirect('lista_juegos')  
-#    else:
-#        #mostarr datos actuales
-#        form = JuegoForm(instance=juego)
-#    
-#    return render(request, 'Editar/editar_juego.html', {
-#        'form': form,
-#        'juego': juego
-#    })
-
-# views.py
 
 def editar_juego(request, pk):
     juego = get_object_or_404(Juego, pk=pk)
@@ -162,21 +144,6 @@ def editar_juego(request, pk):
         'juego': juego
     })
     
-
-#def listar_juegos_con_stock(request):
-    #juegos_list = Juego.objects.select_related(
-    #    'consola', 'distribucion', 'clasificacion', 'estado', 'unidades', 'ubicacion'
-    #).all().order_by('nombreJuego')
-    
-    #paginator = Paginator(juegos_list, 25)  # mostrar de a 25 juegos
-    #page_number = request.GET.get('page')
-    #juegos = paginator.get_page(page_number)
-    
-    #context = {
-    #    'juegos': juegos,
-    #    'titulo': 'Listado de Juegos con Stock'
-    #}
-    #return render(request, 'Editar/lista_juegos_con_stock.html', context)
 
 def listar_juegos_con_stock(request):
     # Obtener parámetros de filtrado
@@ -274,9 +241,6 @@ def lista_juegos_con_stock(request):
     }
     return render(request, 'juegos/lista_con_stock.html', context)
 
-from django.shortcuts import render, get_object_or_404, redirect
-from .forms import ModificarJuegoForm
-from .models import Juego
 
 def modificar_juego(request, juego_id):
     juego = get_object_or_404(Juego, pk=juego_id)
@@ -293,3 +257,9 @@ def modificar_juego(request, juego_id):
         'form': form,
         'juego': juego
     })
+
+def obtener_clasificaciones(request):
+    distribucion_id = request.GET.get('distribucion_id')
+    clasificaciones = Clasificacion.objects.filter(distribucion_id=distribucion_id).values('idClasificacion', 'descripcionClasificacion')
+    return JsonResponse(list(clasificaciones), safe=False)
+

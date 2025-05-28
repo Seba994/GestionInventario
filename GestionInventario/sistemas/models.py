@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User #Clase preestablecida de Django
 #permite crear los usuarios almacenando de forma segura sus contraseñas
-from django.db import models
+from django.db import models 
 
 #Modelo Rol
 
@@ -32,16 +32,7 @@ class Ubicacion(models.Model):
     def __str__(self):
         return "{}".format(self.nombreUbicacion)
     
-#modelos Stock (relaciona una ubicacion con una cantidad)
-    
-class Stock(models.Model):
 
-    idStock = models.IntegerField(primary_key=True,default=None)
-    ubicacion = models.CharField(max_length=100)
-    cantidad = models.IntegerField()
-
-    def __str__(self):
-        return "{}".format(self.cantidad)
 
 #modelo consola
 
@@ -78,7 +69,7 @@ class Distribucion(models.Model):
 
 class Clasificacion(models.Model):
     idClasificacion = models.IntegerField(primary_key=True,default=None)
-    Distribucion = models.ForeignKey(Distribucion,on_delete=models.CASCADE)
+    distribucion = models.ForeignKey(Distribucion,on_delete=models.CASCADE)
     descripcionClasificacion = models.CharField(max_length=10)
 
     def __str__(self):
@@ -88,18 +79,25 @@ class Clasificacion(models.Model):
 
 class Juego(models.Model):
     
-    codigoDeBarra = models.IntegerField(unique=True, null=True, blank=True)
+    codigoDeBarra = models.CharField(max_length=20, unique=True, null=True, blank=True)
     nombreJuego = models.CharField(max_length=250)
     consola = models.ForeignKey(Consola, on_delete=models.CASCADE)
     distribucion = models.ForeignKey(Distribucion, on_delete=models.CASCADE)
     clasificacion = models.ForeignKey(Clasificacion, on_delete=models.CASCADE)
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
-    unidades = models.ForeignKey(Stock, on_delete=models.CASCADE)
-    ubicacion = models.ForeignKey(Ubicacion, on_delete=models.CASCADE)
     imagen = models.ImageField(upload_to='juegos/')
 
     def __str__(self):
-        return self.nombreJuego
-    
- 
-    
+        return self.nombreJuego   
+
+#modelos Stock (relaciona una ubicacion con una cantidad)
+         
+class Stock(models.Model):
+
+    idStock = models.IntegerField(primary_key=True)
+    juego = models.ForeignKey(Juego, on_delete=models.CASCADE, related_name='stocks')
+    ubicacion = models.ForeignKey(Ubicacion, on_delete=models.CASCADE)
+    cantidad = models.IntegerField()
+
+    def __str__(self):
+        return "{}".format(self.cantidad)    

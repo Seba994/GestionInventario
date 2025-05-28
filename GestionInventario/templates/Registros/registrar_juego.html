@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load form_tags %} 
+
+{% block content %}
+<div class="container d-flex justify-content-center">
+    <div class="col-md-6">
+        <h2 class="mb-4 text-center">Registrar nuevo juego</h2>
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label">{{ form.codigoDeBarra.label }}</label>
+                {{ form.codigoDeBarra|add_class:"form-control" }}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">{{ form.nombreJuego.label }}</label>
+                {{ form.nombreJuego|add_class:"form-control" }}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">{{ form.consola.label }}</label>
+                {{ form.consola|add_class:"form-select" }}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">{{ form.distribucion.label }}</label>
+                {{ form.distribucion|add_class:"form-select" }}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">{{ form.clasificacion.label }}</label>
+                {{ form.clasificacion|add_class:"form-select" }}
+            </div>
+
+
+            <div class="mb-3">
+                <label class="form-label">{{ form.imagen.label }}</label>
+                {{ form.imagen|add_class:"form-control" }}
+            </div>
+
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">Registrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#id_distribucion').change(function () {
+            var distribucionId = $(this).val();
+            $.ajax({
+                url: "{% url 'ajax_clasificaciones' %}",
+                data: {
+                    'distribucion_id': distribucionId
+                },
+                success: function (data) {
+                    var select = $('#id_clasificacion');
+                    select.empty();
+                    select.append('<option value="">---------</option>');
+                    data.forEach(function (item) {
+                        select.append('<option value="' + item.idClasificacion + '">' + item.descripcionClasificacion + '</option>');
+                    });
+                }
+            });
+        });
+    });
+</script>
+
+{% endblock %}

@@ -42,4 +42,7 @@ urlpatterns = [
     path('juegos/buscar-rol/', views.buscar_juego_rol, name='buscar_juego_rol'),
     path('principal/', views.principal, name='inicio'),
     path('', RedirectView.as_view(url='pagina_principal/'))
+    path('juegos/', views.lista_juegos, name='lista_juegos'),
+    path('ajax/clasificaciones/', views.obtener_clasificaciones, name='ajax_clasificaciones'),
+
 ]

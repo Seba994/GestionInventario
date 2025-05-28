@@ -3,7 +3,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Personal, Rol , Ubicacion, Consola, Juego 
+from .models import Personal, Rol , Ubicacion, Consola, Juego, Estado, Clasificacion
 
 class PersonalForm(UserCreationForm):
     
@@ -86,7 +86,7 @@ class ConsolaForm(forms.ModelForm):
 class JuegoForm(forms.ModelForm):
     class Meta:
         model = Juego
-        exclude = ['unidades']
+        exclude = ['unidades','estado']
 
     def clean(self):
         cleaned_data = super().clean()
@@ -120,9 +120,6 @@ class JuegoForm(forms.ModelForm):
                 self.add_error('codigoDeBarra', "Este código de barra ya está en uso.")
 
         return cleaned_data
-    
-from django import forms
-from .models import Juego  # Asegúrate de importar tu modelo de producto
 
 class ModificarJuegoForm(forms.ModelForm):
     class Meta:
@@ -131,3 +128,36 @@ class ModificarJuegoForm(forms.ModelForm):
         widgets = {
             'descripcion': forms.Textarea(attrs={'rows': 3}),
         }
+
+
+    def save(self, commit=True):
+        juego = super().save(commit=False)
+        juego.estado = Estado.objects.get(nombreEstado='Activo')
+        if commit:
+            juego.save()
+        return juego
+    
+    def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+
+            # Forzar los IDs que usas en el JavaScript
+            self.fields['distribucion'].widget.attrs.update({'id': 'id_distribucion'})
+            self.fields['clasificacion'].widget.attrs.update({'id': 'id_clasificacion'})
+
+            # Filtrar clasificaciones si ya viene una distribución seleccionada
+            if 'distribucion' in self.data:
+                try:
+                    distribucion_id = int(self.data.get('distribucion'))
+                    self.fields['clasificacion'].queryset = Clasificacion.objects.filter(distribucion_id=distribucion_id)
+                except (ValueError, TypeError):
+                    self.fields['clasificacion'].queryset = Clasificacion.objects.none()
+            else:
+                self.fields['clasificacion'].queryset = Clasificacion.objects.none()
+    
+    
+    def clean_codigoDeBarra(self):
+        codigo = self.cleaned_data['codigoDeBarra']
+        if not codigo.isdigit():
+            raise forms.ValidationError("El código de barra debe contener solo números.")
+        return codigo
+
