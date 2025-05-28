@@ -25,5 +25,10 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
     path('nuevo_usuario/',views.crear_personal, name="crear_usuario"),
     path('nuevo_rol/', views.crear_rol),
-    path('usuarios/', views.gestion_usuarios, name="gestion_usuarios")
+    path('usuarios/', views.gestion_usuarios, name="gestion_usuarios"),
+    path('consolas/registrar/', views.registrar_consola, name='registrar_consola'),
+    path('ubicaciones/registrar/', views.registrar_ubicacion, name='registrar_ubicacion'),
+    path('juegos/registrar/', views.registrar_juego, name='registrar_juego'),
+    path('juegos/', views.lista_juegos, name='lista_juegos'),
+    path('ajax/clasificaciones/', views.obtener_clasificaciones, name='ajax_clasificaciones'),
 ]
