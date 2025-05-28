@@ -36,6 +36,23 @@ VALUES
   (11, 1, '16'),
   (12, 1, '18');
 
+INSERT INTO sistemas_clasificacion (idClasificacion, Distribucion_id, descripcionClasificacion)
+VALUES 
+  (13, 3, 'A'),
+  (14, 3, 'B'),
+  (15, 3, 'C'),
+  (16, 3, 'D'),
+  (17, 3, 'Z');
+
+INSERT INTO sistemas_clasificacion (idClasificacion, Distribucion_id, descripcionClasificacion)
+VALUES 
+  (18, 4, '3'),
+  (19, 4, '7'),
+  (20, 4, '12'),
+  (21, 4, '16'),
+  (22, 4, '18');
+
+
 INSERT INTO sistemas_estado (idEstado, nombreEstado)
 VALUES 
   (1, 'Activo'),
