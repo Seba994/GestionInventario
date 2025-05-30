@@ -75,8 +75,15 @@ class Clasificacion(models.Model):
     def __str__(self):
         return "{}".format(self.descripcionClasificacion)
  
-#modelo Juego
+#modelos Descripcion
+class Descripcion(models.Model):
+    idDescripcion = (models.IntegerField(primary_key=True,default=None))
+    detallesDescripcion= models.CharField(max_length=100)
 
+    def __str__(self):
+        return self.detallesDescripcion
+
+#modelo Juego
 class Juego(models.Model):
     
     codigoDeBarra = models.CharField(max_length=20, unique=True, null=True, blank=True)
@@ -84,6 +91,7 @@ class Juego(models.Model):
     consola = models.ForeignKey(Consola, on_delete=models.CASCADE)
     distribucion = models.ForeignKey(Distribucion, on_delete=models.CASCADE)
     clasificacion = models.ForeignKey(Clasificacion, on_delete=models.CASCADE)
+    descripcion = models.ForeignKey(Descripcion, on_delete=models.SET_NULL, null=True, blank=True)
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
     imagen = models.ImageField(upload_to='juegos/')
 
