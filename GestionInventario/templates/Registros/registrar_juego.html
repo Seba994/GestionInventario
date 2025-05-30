@@ -35,6 +35,12 @@
 
 
             <div class="mb-3">
+                <label class="form-label">{{ form.descripcion.label }}</label>
+                {{ form.descripcion|add_class:"form-select" }}
+            </div>
+
+
+            <div class="mb-3">
                 <label class="form-label">{{ form.imagen.label }}</label>
                 {{ form.imagen|add_class:"form-control" }}
             </div>
