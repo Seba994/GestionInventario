@@ -15,7 +15,7 @@
  <table class="table">
     <thead>
         <tr>
-            <th>ID</th>
+            <th>Código de Barras</th>
             <th>Nombre</th>
             <th>Precio</th>
             <th>Stock</th>
@@ -25,15 +25,15 @@
     <tbody>
         {% for juego in juegos %}  
         <tr>
-            <td>{{ juego.id }}</td>
+            <td>{{ juego.codigoDeBarra }}</td>
             <td>{{ juego.nombre }}</td>
             <td>${{ juego.precio }}</td>
             <td>{{ juego.stock }}</td>
             <td> 
-                <a href="{% url 'modificar_juego' juego.id %}" class="btn btn-sm btn-warning">
+                <a href="{% url 'modificar_juego' juego.codigoDeBarra %}" class="btn btn-sm btn-warning">
                     Editar
                 </a>
-                <a href="{% url 'eliminar_juego' juego.id %}" class="btn btn-sm btn-danger ml-2">
+                <a href="{% url 'eliminar_juego' juego.codigoDeBarra %}" class="btn btn-sm btn-danger ml-2">
                     Eliminar
                 </a>
             </td>
