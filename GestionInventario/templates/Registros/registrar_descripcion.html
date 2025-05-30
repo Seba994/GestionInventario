@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% load form_tags %}
+
+{% block content %}
+<div class="container col-md-6 mt-4">
+    <h2 class="mb-4 text-center">Registrar Descripción</h2>
+    
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Sigla descripción</label>
+            {{ form.siglaDescripcion|add_class:"form-control" }}
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Detalle descripción</label>
+            {{ form.detalleDescripcion|add_class:"form-control" }}
+        </div>
+
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary">Registrar Descripción</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
