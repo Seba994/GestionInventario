@@ -17,7 +17,6 @@
         <tr>
             <th>Código de Barras</th>
             <th>Nombre</th>
-            <th>Precio</th>
             <th>Stock</th>
             <th>Acciones</th>  
         </tr>
@@ -26,8 +25,7 @@
         {% for juego in juegos %}  
         <tr>
             <td>{{ juego.codigoDeBarra }}</td>
-            <td>{{ juego.nombre }}</td>
-            <td>${{ juego.precio }}</td>
+            <td>{{ juego.nombreJuego }}</td>
             <td>{{ juego.stock }}</td>
             <td> 
                 <a href="{% url 'modificar_juego' juego.codigoDeBarra %}" class="btn btn-sm btn-warning">
