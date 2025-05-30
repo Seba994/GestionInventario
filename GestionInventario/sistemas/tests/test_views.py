@@ -161,7 +161,8 @@ class ViewsTestCase(TestCase):
             ubicacion=self.ubicacion,
             estado=self.estado,
             distribucion=self.distribucion,
-            clasificacion=self.clasificacion
+            clasificacion=self.clasificacion,
+            codigoDeBarra='123456758'
         )
 
     def test_lista_juegos(self):
