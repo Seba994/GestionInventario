@@ -129,7 +129,7 @@ def registrar_juego(request):
 # Vista para listar juegos
 def lista_juegos(request):
     juegos = Juego.objects.all()
-    return render(request, 'Editar/lista_juegos_con_stock.html', {'juegos': juegos})
+    return render(request, 'juegos/lista_con_stock.html', {'juegos': juegos})
 
 
 def editar_juego(request, pk):
