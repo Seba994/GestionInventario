@@ -3,7 +3,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Personal, Rol , Ubicacion, Consola, Juego, Estado, Clasificacion
+from .models import Personal, Rol , Ubicacion, Consola, Juego, Estado, Clasificacion, Descripcion
 
 class PersonalForm(UserCreationForm):
     
@@ -86,7 +86,12 @@ class ConsolaForm(forms.ModelForm):
 class JuegoForm(forms.ModelForm):
     class Meta:
         model = Juego
-        exclude = ['unidades','estado']
+        fields = ['codigoDeBarra', 'nombreJuego', 'consola', 'distribucion', 'clasificacion', 'descripcion', 'imagen']
+
+    def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.fields['descripcion'].queryset = self.fields['descripcion'].queryset.order_by('detallesDescripcion')
+
 
     def clean(self):
         cleaned_data = super().clean()
@@ -94,6 +99,7 @@ class JuegoForm(forms.ModelForm):
         consola = cleaned_data.get('consola')
         distribucion = cleaned_data.get('distribucion')
         codigo = cleaned_data.get('codigoDeBarra')
+
 
         # Validar combinación lógica
         if nombre and consola and distribucion:

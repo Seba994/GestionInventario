@@ -116,7 +116,11 @@ def registrar_juego(request):
         form = JuegoForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
+            messages.success(request, '✅ Juego registrado exitosamente.')
             return redirect('lista_juegos')
+        else:
+            messages.error(request, '❌ Error al registrar el juego. Revisa el formulario.') 
+
     else:
         form = JuegoForm()
     return render(request, 'Registros/registrar_juego.html', {'form': form})
