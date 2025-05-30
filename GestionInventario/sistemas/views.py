@@ -102,7 +102,7 @@ def registrar_ubicacion(request):
             return redirect('lista_ubicaciones')
     else:
         form = UbicacionForm()
-    return render(request, 'Registrar/registrar_ubicaciones.html', {'form': form})
+    return render(request, 'Registros/registrar_ubicaciones.html', {'form': form})
 
 # Vista para listar ubicaciones
 def lista_ubicaciones(request):
