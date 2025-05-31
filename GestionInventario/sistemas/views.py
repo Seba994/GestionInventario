@@ -3,6 +3,7 @@ from pyexpat.errors import messages
 from django.shortcuts import get_object_or_404, render, redirect
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm
@@ -117,7 +118,7 @@ def registrar_juego(request):
         if form.is_valid():
             form.save()
             messages.success(request, '✅ Juego registrado exitosamente.')
-            return redirect('lista_juegos')
+            return redirect('lista_juegos_con_stock')
         else:
             messages.error(request, '❌ Error al registrar el juego. Revisa el formulario.') 
 
@@ -185,7 +186,7 @@ def listar_juegos_con_stock(request):
         'estados': estados,
         'titulo': 'Listado de Juegos con Stock'
     }
-    return render(request, 'Editar/lista_juegos_con_stock.html', context)
+    return render(request, 'juegos/lista_juegos_con_stock.html', context)
 
 @login_required(login_url='login')
 def principal(request):
@@ -246,8 +247,8 @@ def lista_juegos_con_stock(request):
     return render(request, 'juegos/lista_con_stock.html', context)
 
 
-def modificar_juego(request, juego_id):
-    juego = get_object_or_404(Juego, pk=juego_id)
+def modificar_juego(request, id):
+    juego = get_object_or_404(Juego, id=id)
     
     if request.method == 'POST':
         form = ModificarJuegoForm(request.POST, instance=juego)
@@ -267,3 +268,40 @@ def obtener_clasificaciones(request):
     clasificaciones = Clasificacion.objects.filter(distribucion_id=distribucion_id).values('idClasificacion', 'descripcionClasificacion')
     return JsonResponse(list(clasificaciones), safe=False)
 
+@login_required(login_url='login')
+def gestionar_stock(request, id):
+    juego = get_object_or_404(Juego, pk=id)
+    stocks = Stock.objects.filter(juego=juego)
+
+    return render(request, 'Registros/gestionar_stock.html', {
+        'juego': juego,
+        'stocks': stocks
+    })
+
+@login_required(login_url='login')
+def agregar_stock(request, juego_id):
+    juego = get_object_or_404(Juego, id=juego_id)
+    ubicaciones = Ubicacion.objects.all()
+
+    if request.method == 'POST':
+        ubicacion_id = request.POST.get('ubicacion')
+        cantidad = request.POST.get('cantidad')
+
+        if not ubicacion_id or not cantidad:
+            messages.error(request, "Debes seleccionar una ubicación y una cantidad.")
+        else:
+            ubicacion = get_object_or_404(Ubicacion, idUbicacion=ubicacion_id)
+            cantidad = int(cantidad)
+
+            # Verifica si ya existe un stock para esa ubicación
+            stock, created = Stock.objects.get_or_create(juego=juego, ubicacion=ubicacion)
+            stock.cantidad += cantidad
+            stock.save()
+
+            messages.success(request, f"Se agregaron {cantidad} unidades al stock.")
+            return redirect('gestionar_stock', id=juego.id)
+
+    return render(request, 'Registros/agregar_stock.html', {
+        'juego': juego,
+        'ubicaciones': ubicaciones
+    })
