@@ -30,7 +30,7 @@ class Ubicacion(models.Model):
     descripcionUbicacion = models.CharField(max_length=255)
 
     def __str__(self):
-        return "{}".format(self.nombreUbicacion)
+        return self.nombreUbicacion
     
 
 
@@ -107,5 +107,6 @@ class Stock(models.Model):
     ubicacion = models.ForeignKey(Ubicacion, on_delete=models.CASCADE)
     cantidad = models.IntegerField()
 
+    
     def __str__(self):
-        return "{}".format(self.cantidad)    
+        return f"{self.juego.nombreJuego} en {self.ubicacion.nombreUbicacion} - {self.cantidad} unidades"
