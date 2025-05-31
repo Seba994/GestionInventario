@@ -162,8 +162,5 @@ class ModificarJuegoForm(forms.ModelForm):
     class Meta:
         model = Juego
         fields = '__all__'  
-        widgets = {
-            'descripcion': forms.Textarea(attrs={'rows': 3}),
-        }
-
+        
 
