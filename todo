@@ -1,0 +1,24 @@
+Registrar juego nuevo
+- identificar si el error es por que puso un código de barra que ya esta o si es por otra cosa, no me registro varias veces el juego pero no me decía por que (después me di cuenta que era por la wii)
+- cambiar los nombres de los inputs
+- sale error y no se crea pero en consola me sale post 200
+- por alguna razón da problemas cuando consola es Wii
+
+eliminar juego
+- al darle cancelar me redirige a detalle juego - no siempre
+
+ubicaciones
+- falta editar, eliminar y buscar
+
+usuarios
+- falta editar y eliminar
+- cambio de rol
+- corregir nombres formularios
+- falta mensaje de exito al crear
+
+registro consolas
+- no funciona
+- corregir etiquetas del formulario
+
+Busquedas
+- implementarlas
