@@ -41,9 +41,6 @@ def crear_rol(request):
         form = RolForm()
     return render(request, 'Registros/crear_rol.html', {'form': form})
 
-
-from django.contrib.auth.decorators import login_required
-
 @login_required(login_url='login')
 def gestion_usuarios(request):
     usuarios_data = []
