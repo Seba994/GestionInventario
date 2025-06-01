@@ -40,7 +40,12 @@
             <a href="{% url 'eliminar_juego' juego.id %}" class="btn btn-sm btn-danger ml-2">Eliminar</a>
             <a href="{% url 'gestionar_stock' juego.id %}" class="btn btn-sm btn-info ml-2">Gestionar Stock</a>
         </td>
-    </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="4">No hay juegos registrados</td>
+                </tr>
+        </tr>
+
         {% endfor %}
     </tbody>
 </table>

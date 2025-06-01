@@ -6,13 +6,18 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mt-6">
-    <h2 class="mb-4 text-center">
-        {% if form.instance.id %}Editar juego{% else %}Nuevo juego{% endif %}
-    </h2>
-    <div class="container d-flex justify-content-center">
-        <div class="col-md-6">
-        <form method="POST" enctype="multipart/form-data">
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h2 class="h2">{% if form.instance.id %}Editar Juego{% else %}Nuevo Juego{% endif %}</h2>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'con_stock' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Volver al listado
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
 
             <div class="mb-3">
@@ -65,30 +70,6 @@
                 <button type="submit" class="btn btn-primary">Guardar</button>
             </div>
         </form>
-        </div>
     </div>
 </div>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    $(document).ready(function () {
-        $('#id_distribucion').change(function () {
-            var distribucionId = $(this).val();
-            $.ajax({
-                url: "{% url 'ajax_clasificaciones' %}",
-                data: {
-                    'distribucion_id': distribucionId
-                },
-                success: function (data) {
-                    var select = $('#id_clasificacion');
-                    select.empty();
-                    select.append('<option value="">---------</option>');
-                    data.forEach(function (item) {
-                        select.append('<option value="' + item.idClasificacion + '">' + item.descripcionClasificacion + '</option>');
-                    });
-                }
-            });
-        });
-    });
-</script>
 {% endblock %}
