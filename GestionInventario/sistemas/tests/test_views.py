@@ -161,7 +161,8 @@ class ViewsTestCase(TestCase):
             ubicacion=self.ubicacion,
             estado=self.estado,
             distribucion=self.distribucion,
-            clasificacion=self.clasificacion
+            clasificacion=self.clasificacion,
+            codigoDeBarra='123456758'
         )
 
     def test_lista_juegos(self):
@@ -218,7 +219,7 @@ class ViewsTestCase(TestCase):
 
     def test_obtener_clasificaciones(self):
         """Test vista obtener_clasificaciones"""
-        url = reverse('obtener_clasificaciones')
+        url = reverse('ajax_clasificaciones')
         response = self.client.get(url, {'distribucion_id': self.distribucion.pk})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/json')

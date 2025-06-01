@@ -103,7 +103,7 @@ def registrar_ubicacion(request):
             return redirect('lista_ubicaciones')
     else:
         form = UbicacionForm()
-    return render(request, 'ubicaciones/registrar.html', {'form': form})
+    return render(request, 'Registros/registrar_ubicaciones.html', {'form': form})
 
 # Vista para listar ubicaciones
 def lista_ubicaciones(request):
@@ -130,7 +130,7 @@ def registrar_juego(request):
 # Vista para listar juegos
 def lista_juegos(request):
     juegos = Juego.objects.all()
-    return render(request, 'Editar/lista_juegos_con_stock.html', {'juegos': juegos})
+    return render(request, 'juegos/lista_con_stock.html', {'juegos': juegos})
 
 
 def listar_juegos_con_stock(request):
