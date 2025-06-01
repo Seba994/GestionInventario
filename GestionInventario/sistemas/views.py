@@ -118,7 +118,7 @@ def registrar_juego(request):
         if form.is_valid():
             form.save()
             messages.success(request, '✅ Juego registrado exitosamente.')
-            return redirect('lista_juegos_con_stock')
+            return redirect('listar_juegos_con_stock')
         else:
             messages.error(request, '❌ Error al registrar el juego. Revisa el formulario.') 
 
