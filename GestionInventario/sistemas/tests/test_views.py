@@ -191,7 +191,7 @@ class ViewsTestCase(TestCase):
     def test_editar_juego(self):
         """Test vista editar_juego"""
         self.client.login(username='testuser', password='testpass123')
-        url = reverse('editar_juego', args=[self.juego.pk])
+        url = reverse('modificar_juego_id', args=[self.juego.pk])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'Editar/editar_juego.html')
