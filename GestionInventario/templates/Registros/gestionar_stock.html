@@ -35,9 +35,8 @@
                     <td>{{ stock.ubicacion.nombreUbicacion }}</td>
                     <td>{{ stock.cantidad }}</td>
                     <td>
-                        <a href="{% url 'agregar_stock' stock.id %}" class="btn btn-success btn-sm">Sumar</a>
-                        <!-- <a href="{% url 'restar_stock' stock.id %}" class="btn btn-warning btn-sm">Restar</a>
-                        <a href="{% url 'mover_stock' stock.id %}" class="btn btn-info btn-sm">Mover</a> -->
+                        <a href="{% url 'agregar_stock' stock.idStock %}" class="btn btn-success btn-sm">Sumar</a>
+                        
                     </td>
                 </tr>
                 {% endfor %}
