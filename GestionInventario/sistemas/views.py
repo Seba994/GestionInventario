@@ -141,7 +141,7 @@ def listar_juegos_con_stock(request):
     
     # Obtener todos los juegos con sus relaciones
     juegos_list = Juego.objects.select_related(
-        'consola', 'distribucion', 'clasificacion', 'estado', 'unidades', 'ubicacion'
+        'consola', 'distribucion', 'clasificacion', 'estado'
     ).all().order_by('nombreJuego')
     
     # Aplicar filtros
@@ -177,7 +177,7 @@ def principal(request):
 
 def detalle_juego(request, pk):
     juego = get_object_or_404(Juego.objects.select_related(
-        'consola', 'distribucion', 'clasificacion', 'estado', 'unidades', 'ubicacion'
+        'consola', 'distribucion', 'clasificacion', 'estado'
     ), pk=pk)
     return render(request, 'Editar/detalle_juego.html', {'juego': juego})
 
