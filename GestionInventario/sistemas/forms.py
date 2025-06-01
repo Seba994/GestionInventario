@@ -175,5 +175,5 @@ class ModificarJuegoForm(forms.ModelForm):
         fields = '__all__'  
         exclude = ['codigoDeBarra']  # Excluye el campo del formulario
         widgets = {
-            'descripcion': forms.Textarea(attrs={'rows': 3}),
+            'descripcion': forms.Select(attrs={'class': 'form-select'})
         }
