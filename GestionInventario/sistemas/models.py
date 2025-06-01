@@ -101,12 +101,13 @@ class Juego(models.Model):
 #modelos Stock (relaciona una ubicacion con una cantidad)
          
 class Stock(models.Model):
-
-    idStock = models.IntegerField(primary_key=True)
+    idStock = models.AutoField(primary_key=True)
     juego = models.ForeignKey(Juego, on_delete=models.CASCADE, related_name='stocks')
     ubicacion = models.ForeignKey(Ubicacion, on_delete=models.CASCADE)
-    cantidad = models.IntegerField()
+    cantidad = models.IntegerField(default=0)
 
-    
+    class Meta:
+        unique_together = ['juego', 'ubicacion']
+
     def __str__(self):
         return f"{self.juego.nombreJuego} en {self.ubicacion.nombreUbicacion} - {self.cantidad} unidades"
