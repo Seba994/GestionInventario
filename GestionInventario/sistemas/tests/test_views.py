@@ -194,7 +194,7 @@ class ViewsTestCase(TestCase):
         url = reverse('modificar_juego_id', args=[self.juego.pk])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'Editar/editar_juego.html')
+        self.assertTemplateUsed(response, 'juegos/modificar_juego.html')
 
     def test_eliminar_juego(self):
         """Test vista eliminar_juego"""
