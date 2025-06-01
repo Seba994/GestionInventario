@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Agregar Stock para: {{ juego.nombreJuego }}</h2>
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Ubicación</label>
+            <select name="ubicacion" class="form-select">
+                {% for ubicacion in ubicaciones %}
+                    <option value="{{ ubicacion.idUbicacion }}">{{ ubicacion.nombreUbicacion }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Cantidad</label>
+            <input type="number" name="cantidad" class="form-control" min="1" required>
+        </div>
+
+        <button type="submit" class="btn btn-success">Agregar</button>
+        <a href="{% url 'gestionar_stock' juego.id %}" class="btn btn-secondary">Volver</a>
+    </form>
+</div>
+{% endblock %}
