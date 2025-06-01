@@ -197,8 +197,19 @@ def buscar_juego(request):
 
 def buscar_juego_ubicacion(request):
     ubicacion = request.GET.get('ubicacion', '')
-    juegos = Juego.objects.filter(ubicacion__nombreUbicacion__icontains=ubicacion)
-    return render(request, 'juegos/buscar_ubicacion.html', {'juegos': juegos})
+    juegos = []
+    
+    if ubicacion:
+        juegos = Juego.objects.filter(
+            stocks__ubicacion__nombreUbicacion__icontains=ubicacion
+        ).distinct()
+    
+    context = {
+        'juegos': juegos,
+        'busqueda': ubicacion,
+        'total_resultados': juegos.count() if ubicacion else 0
+    }
+    return render(request, 'juegos/buscar_ubicacion.html', context)
 
 def buscar_juego_consola(request):
     consola = request.GET.get('consola', '')
