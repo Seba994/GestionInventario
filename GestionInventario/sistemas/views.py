@@ -247,7 +247,7 @@ def modificar_juego_id(request, id):
         form = ModificarJuegoForm(request.POST, instance=juego)
         if form.is_valid():
             form.save()
-            return redirect('con_stock')  # manda a la lista de juegos
+            return redirect('listar_juegos_con_stock')  # manda a la lista de juegos
     else:
         form = ModificarJuegoForm(instance=juego)
     
