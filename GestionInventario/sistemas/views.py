@@ -132,23 +132,6 @@ def lista_juegos(request):
     return render(request, 'Editar/lista_juegos_con_stock.html', {'juegos': juegos})
 
 
-def editar_juego(request, pk):
-    juego = get_object_or_404(Juego, pk=pk)
-    
-    if request.method == 'POST':
-        form = JuegoForm(request.POST, request.FILES, instance=juego)
-        if form.is_valid():
-            form.save()
-            return redirect('lista_juegos_con_stock')
-    else:
-        form = JuegoForm(instance=juego)
-    
-    return render(request, 'Editar/editar_juego.html', {
-        'form': form,
-        'juego': juego
-    })
-    
-
 def listar_juegos_con_stock(request):
     # Obtener parámetros de filtrado
     search_query = request.GET.get('search', '')
@@ -246,14 +229,15 @@ def lista_juegos_con_stock(request):
     return render(request, 'juegos/lista_con_stock.html', context)
 
 
-def modificar_juego(request, juego_id):
-    juego = get_object_or_404(Juego, pk=juego_id)
+def modificar_juego(request, codigoDeBarra):
+    # Obtiene el juego por su código de barra
+    juego = get_object_or_404(Juego, codigoDeBarra=codigoDeBarra)
     
     if request.method == 'POST':
         form = ModificarJuegoForm(request.POST, instance=juego)
         if form.is_valid():
             form.save()
-            return redirect('lista_juegos_con_stock')  # manda a la lista de juegos
+            return redirect('con_stock')  # manda a la lista de juegos
     else:
         form = ModificarJuegoForm(instance=juego)
     
