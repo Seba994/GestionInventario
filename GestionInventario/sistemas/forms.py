@@ -87,6 +87,15 @@ class JuegoForm(forms.ModelForm):
     class Meta:
         model = Juego
         fields = ['codigoDeBarra', 'nombreJuego', 'consola', 'distribucion', 'clasificacion', 'descripcion', 'imagen']
+        widgets = {
+            'codigoDeBarra': forms.TextInput(attrs={'class': 'form-control'}),
+            'nombreJuego': forms.TextInput(attrs={'class': 'form-control'}),
+            'consola': forms.Select(attrs={'class': 'form-select'}),
+            'distribucion': forms.Select(attrs={'class': 'form-select'}),
+            'clasificacion': forms.Select(attrs={'class': 'form-select'}),
+            'descripcion': forms.Select(attrs={'class': 'form-select'}),
+            'imagen': forms.FileInput(attrs={'class': 'form-control'}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
