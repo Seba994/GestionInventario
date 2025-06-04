@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load form_tags %}
+
+{% block title %}Editar Ubicación{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h2 class="h2">Editar Ubicación</h2>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'lista_ubicaciones' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Volver al listado
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label">{{ form.nombreUbicacion.label }}</label>
+                {{ form.nombreUbicacion|add_class:"form-control" }}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">{{ form.descripcionUbicacion.label }}</label>
+                {{ form.descripcionUbicacion|add_class:"form-control" }}
+            </div>
+
+            <div class="text-center">
+                <a href="{% url 'lista_ubicaciones' %}" class="btn btn-secondary me-2">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
