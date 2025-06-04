@@ -6,9 +6,11 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
+from django.db.models import Sum
 from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm
 from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion
 import os
+
 
 
 def crear_personal(request):
@@ -102,10 +104,42 @@ def registrar_ubicacion(request):
         form = UbicacionForm()
     return render(request, 'Registros/registrar_ubicaciones.html', {'form': form})
 
+def agregar_varias_ubicaciones(request):
+    if request.method == 'POST':
+        nombres = request.POST.getlist('nombreUbicacion[]')
+        descripciones = request.POST.getlist('descripcionUbicacion[]')
+        
+        for nombre, descripcion in zip(nombres, descripciones):
+            if nombre.strip():
+                Ubicacion.objects.create(
+                    nombreUbicacion=nombre.strip(),
+                    descripcionUbicacion=descripcion.strip() if descripcion else ''
+                )
+        messages.success(request, 'Ubicaciones agregadas correctamente.')
+        return redirect('lista_ubicaciones')
+
+    return render(request, 'ubicaciones/agregar_varias_ubicaciones.html')
+
+def buscar_ubicaciones(termino):
+    if termino:
+        return Ubicacion.objects.filter(nombreUbicacion__icontains=termino)
+    return Ubicacion.objects.all()
+
 # Vista para listar ubicaciones
 def lista_ubicaciones(request):
-    ubicaciones = Ubicacion.objects.all()
-    return render(request, 'ubicaciones/lista.html', {'ubicaciones': ubicaciones})
+    termino_busqueda = request.GET.get('search', '')
+    ubicaciones = buscar_ubicaciones(termino_busqueda)
+
+    paginator = Paginator(ubicaciones, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'ubicaciones': page_obj,
+        'page_obj': page_obj,
+        'search_term': termino_busqueda,
+    }
+    return render(request, 'ubicaciones/lista_ubicacion.html', context)
 
 # Vista para registrar juego
 @login_required(login_url='login')
@@ -113,14 +147,26 @@ def registrar_juego(request):
     if request.method == 'POST':
         form = JuegoForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
-            messages.success(request, '✅ Juego registrado exitosamente.')
-            return redirect('listar_juegos_con_stock')
+            juego = form.save()
+            accion = request.POST.get('action')
+
+            if accion == 'guardar_otro':
+                messages.success(request, '✅ Juego registrado exitosamente. Puedes agregar otro.')
+                return redirect('registrar_juego')
+
+            elif accion == 'guardar_stock':
+                messages.success(request, '✅ Juego registrado. Redirigiendo a gestión de stock.')
+                return redirect('gestionar_stock', id=juego.id)
+
+            else:
+                messages.success(request, '✅ Juego registrado exitosamente.')
+                return redirect('listar_juegos_con_stock')
         else:
             messages.error(request, '❌ Error al registrar el juego. Revisa el formulario.') 
 
     else:
         form = JuegoForm()
+
     return render(request, 'Registros/registrar_juego.html', {'form': form})
  
 
@@ -225,7 +271,7 @@ def lista_juegos_con_stock(request):
     distribuciones = Distribucion.objects.all()
     clasificaciones = Clasificacion.objects.all()
     estados = Estado.objects.all()
-    ubicaciones = Ubicacion.objects.all()
+    ubicaciones = Ubicacion.objects.all()   
     context = {
         'juegos': juegos,
         'consolas': consolas,
@@ -312,3 +358,78 @@ def agregar_stock(request, juego_id):
         'juego': juego,
         'ubicaciones': ubicaciones
     })
+
+@login_required(login_url='login')
+def restar_stock(request, juego_id, stock_id):
+    stock = get_object_or_404(Stock, idStock=stock_id, juego__id=juego_id)
+
+    if stock.cantidad > 0:
+        stock.cantidad -= 1
+        stock.save()
+
+        stock_total = obtener_stock_total_juego(juego_id)
+
+        # Espacio reservado: Alerta cuando stock baja a 5
+        if stock_total == 5:
+            # TODO: Enviar alerta por correo: stock bajo (5 unidades)
+            print("ALERTA: El stock total ha bajado a 5 unidades.")
+            pass
+
+        # Espacio reservado: Alerta cuando stock baja a 0
+        if stock_total == 0:
+            # TODO: Enviar alerta por correo: stock agotado (0 unidades)
+            print("ALERTA: El stock total ha llegado a 0.")
+            pass
+
+        messages.success(request, f'Se ha restado una unidad del stock en {stock.ubicacion.nombreUbicacion}.')
+    else:
+        messages.warning(request, 'No se puede restar, ya que el stock ya está en 0.')
+
+    return redirect('gestionar_stock', id=juego_id)
+
+def obtener_stock_total_juego(juego_id):
+    total = Stock.objects.filter(juego_id=juego_id).aggregate(Sum('cantidad'))['cantidad__sum']
+    return total or 0
+
+
+def editar_ubicacion(request, id):
+    ubicacion = get_object_or_404(Ubicacion, idUbicacion=id)
+
+    if request.method == 'POST':
+        form = UbicacionForm(request.POST, instance=ubicacion)
+        if form.is_valid():
+            form.save()
+            return redirect('lista_ubicaciones')  # Cambia esto si tienes otro nombre en urls.py
+    else:
+        form = UbicacionForm(instance=ubicacion)
+
+    return render(request, 'ubicaciones/editar_ubicacion.html', {
+        'form': form,
+        'ubicacion': ubicacion,
+        'titulo': 'Editar Ubicación'
+    })
+
+
+def eliminar_ubicacion(request, id):
+    ubicacion = get_object_or_404(Ubicacion, pk=id)
+    
+    # Obtener todos los registros de stock de esta ubicación
+    stock_asociado = Stock.objects.filter(ubicacion=ubicacion)
+    
+    # Verificar si alguno tiene stock mayor a 0
+    if any(s.cantidad > 0 for s in stock_asociado):
+        messages.error(request, "No se puede eliminar la ubicación porque aún contiene stock.")
+        return redirect('lista_ubicaciones')
+    
+    # Eliminar los registros de stock asociados (todos son 0)
+    stock_asociado.delete()
+    
+    # Eliminar la ubicación
+    ubicacion.delete()
+    messages.success(request, "Ubicación eliminada correctamente.")
+    return redirect('lista_ubicaciones')
+
+def buscar_ubicaciones(termino):
+    if termino:
+        return Ubicacion.objects.filter(nombreUbicacion__icontains=termino)
+    return Ubicacion.objects.all()
