@@ -87,6 +87,13 @@ class JuegoForm(forms.ModelForm):
     class Meta:
         model = Juego
         fields = ['codigoDeBarra', 'nombreJuego', 'consola', 'distribucion', 'clasificacion', 'descripcion', 'imagen']
+        labels = { "codigoDeBarra": "Código de Barra",
+                 "nombreJuego": "Nombre del Juego",
+                 "consola": "Consola",
+                 "distribucion": "Distribución",
+                 "clasificacion": "Clasificación",
+                 "descripcion": "Descripción",
+                 "imagen": "Imagen"}
         widgets = {
             'codigoDeBarra': forms.TextInput(attrs={'class': 'form-control'}),
             'nombreJuego': forms.TextInput(attrs={'class': 'form-control'}),
