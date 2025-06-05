@@ -10,6 +10,8 @@ from django.db.models import Sum
 from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm
 from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion
 import os
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 
 
@@ -162,7 +164,20 @@ def registrar_juego(request):
                 messages.success(request, '✅ Juego registrado exitosamente.')
                 return redirect('listar_juegos_con_stock')
         else:
-            messages.error(request, '❌ Error al registrar el juego. Revisa el formulario.') 
+            field_labels = {
+                'codigoDeBarra': 'Código de Barra',
+                'nombreJuego': 'Nombre del Juego',
+                'consola': 'Consola',
+                'distribucion': 'Distribución',
+                'clasificacion': 'Clasificación',
+                'descripcion': 'Descripción',
+                'imagen': 'Imagen'
+            }
+            
+            for field, errors in form.errors.items():
+                field_name = field_labels.get(field, field)
+                for error in errors:
+                    messages.error(request, f"❌ Error en {field_name}: {error}")
 
     else:
         form = JuegoForm()

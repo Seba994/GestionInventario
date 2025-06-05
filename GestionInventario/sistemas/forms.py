@@ -1,10 +1,11 @@
 # forms.py
-
+from rest_framework import status
+from django.core.exceptions import ValidationError
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import Personal, Rol , Ubicacion, Consola, Juego, Estado, Clasificacion, Descripcion
-
+import logging
 class PersonalForm(UserCreationForm):
     
     nombre = forms.CharField(label='Nombre completo')
@@ -87,7 +88,7 @@ class ConsolaForm(forms.ModelForm):
         return nombre
 
 #formulario para juegos, con validaciones
-class JuegoForm(forms.ModelForm):
+#class JuegoForm(forms.ModelForm):
     class Meta:
         model = Juego
         fields = ['codigoDeBarra', 'nombreJuego', 'consola', 'distribucion', 'clasificacion', 'descripcion', 'imagen']
@@ -171,7 +172,143 @@ class JuegoForm(forms.ModelForm):
         if commit:
             juego.save()
         return juego
-    
+ 
+logger = logging.getLogger(__name__)
+
+class JuegoForm(forms.ModelForm):
+    class Meta:
+        model = Juego
+        fields = ['codigoDeBarra', 'nombreJuego', 'consola', 'distribucion', 'clasificacion', 'descripcion', 'imagen']
+        labels = {
+            "codigoDeBarra": "Código de Barra",
+            "nombreJuego": "Nombre del Juego",
+            "consola": "Consola",
+            "distribucion": "Distribución",
+            "clasificacion": "Clasificación",
+            "descripcion": "Descripción",
+            "imagen": "Imagen"
+        }
+        widgets = {
+            'codigoDeBarra': forms.TextInput(attrs={'class': 'form-control'}),
+            'nombreJuego': forms.TextInput(attrs={'class': 'form-control'}),
+            'consola': forms.Select(attrs={'class': 'form-select'}),
+            'distribucion': forms.Select(attrs={'class': 'form-select'}),
+            'clasificacion': forms.Select(attrs={'class': 'form-select'}),
+            'descripcion': forms.Select(attrs={'class': 'form-select'}),
+            'imagen': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        try:
+            super().__init__(*args, **kwargs)
+            
+            # Configurar widgets y ordenamiento
+            self.fields['descripcion'].queryset = self.fields['descripcion'].queryset.order_by('detallesDescripcion')
+            
+            # Forzar los IDs para JavaScript
+            self.fields['distribucion'].widget.attrs.update({'id': 'id_distribucion'})
+            self.fields['clasificacion'].widget.attrs.update({'id': 'id_clasificacion'})
+            
+
+            for field in self.fields.values():
+                field.widget.attrs['class'] = 'form-control'
+
+            # Filtrar clasificaciones según distribución
+            if 'distribucion' in self.data:
+                try:
+                    distribucion_id = int(self.data.get('distribucion'))
+                    self.fields['clasificacion'].queryset = Clasificacion.objects.filter(distribucion_id=distribucion_id)
+                except (ValueError, TypeError) as e:
+                    logger.error(f"Error procesando distribución: {str(e)}")
+                    self.fields['clasificacion'].queryset = Clasificacion.objects.none()
+            else:
+                self.fields['clasificacion'].queryset = Clasificacion.objects.none()
+                
+        except Exception as e:
+            logger.error(f"Error inicializando formulario: {str(e)}")
+            raise ValidationError(
+                "Error inicializando el formulario",
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def clean_codigoDeBarra(self):
+        codigo = self.cleaned_data.get('codigoDeBarra')
+        try:
+            if codigo:
+                if not codigo.isdigit():
+                    raise ValidationError(
+                        "El código de barra debe contener solo números.",
+                        code=status.HTTP_400_BAD_REQUEST
+                    )
+                    
+                existe_codigo = Juego.objects.filter(codigoDeBarra=codigo)
+                if self.instance.pk:
+                    existe_codigo = existe_codigo.exclude(pk=self.instance.pk)
+                if existe_codigo.exists():
+                    raise ValidationError(
+                        "Este código de barra ya está en uso.",
+                        code=status.HTTP_409_CONFLICT
+                    )
+            return codigo
+        except Exception as e:
+            logger.error(f"Error validando código de barra: {str(e)}")
+            raise ValidationError(
+                "Error validando el código de barra",
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        try:
+            nombre = cleaned_data.get('nombreJuego')
+            consola = cleaned_data.get('consola')
+            distribucion = cleaned_data.get('distribucion')
+
+            if nombre and consola and distribucion:
+                existe = Juego.objects.filter(
+                    nombreJuego=nombre,
+                    consola=consola,
+                    distribucion=distribucion
+                )
+                if self.instance.pk:
+                    existe = existe.exclude(pk=self.instance.pk)
+
+                if existe.exists():
+                    raise ValidationError(
+                        "Ya existe un juego con ese nombre, consola y distribución.",
+                        code=status.HTTP_409_CONFLICT
+                    )
+            return cleaned_data
+        except Exception as e:
+            logger.error(f"Error en validación combinada: {str(e)}")
+            raise ValidationError(
+                "Error validando la combinación del juego",
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def save(self, commit=True):
+        try:
+            juego = super().save(commit=False)
+            
+            # Asegurar que exista el estado 'Activo'
+            estado_activo, created = Estado.objects.get_or_create(
+                nombreEstado='Activo',
+                defaults={'idEstado': 1}  # Ajusta según tu modelo
+            )
+            juego.estado = estado_activo
+            
+            if commit:
+                juego.save()
+                self.save_m2m()  # Importante para relaciones many-to-many
+            
+            return juego
+            
+        except Exception as e:
+            logger.error(f"Error guardando juego: {str(e)}")
+            raise ValidationError(
+                f"Error al guardar el juego: {str(e)}",
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )    
 class ModificarJuegoForm(forms.ModelForm):
     class Meta:
         model = Juego
