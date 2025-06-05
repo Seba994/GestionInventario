@@ -93,7 +93,7 @@ class Juego(models.Model):
     clasificacion = models.ForeignKey(Clasificacion, on_delete=models.CASCADE)
     descripcion = models.ForeignKey(Descripcion, on_delete=models.SET_NULL, null=True, blank=True)
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
-    imagen = models.ImageField(upload_to='juegos/')
+    imagen = models.URLField(max_length=500, blank=True, null=True)  # Cambiado a URLField
 
     def __str__(self):
         return self.nombreJuego   
