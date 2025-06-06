@@ -27,14 +27,19 @@
     </thead>
     <tbody>
         {% for juego in juegos %}  
-    <tr>
+    <tr{% if juego.stock_total == 0 %}
+        class="table-danger"
+    {% elif juego.stock_total <= 5 %}
+        class="table-warning"
+    {% endif %}>
+
         <td>{{ juego.codigoDeBarra }}</td>
         <td>{{ juego.nombreJuego }}</td>
         <td>{{ juego.consola.nombreConsola }}</td>
         <td>{{ juego.distribucion.siglaDistribucion }}</td>
         <td>{{ juego.clasificacion.descripcionClasificacion }}</td>
         <td>{{ juego.descripcion.detallesDescripcion }}</td>
-        <td>{{ juego.stock }}</td>
+        <td>{{ juego.stock_total }}</td>
         <td> 
             <a href="{% url 'modificar_juego_id' juego.id %}" class="btn btn-sm btn-success">Editar</a>
             <a href="{% url 'eliminar_juego' juego.id %}" class="btn btn-sm btn-danger ml-2">Eliminar</a>

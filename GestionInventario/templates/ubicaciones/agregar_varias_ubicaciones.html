@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Agregar varias ubicaciones{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Agregar Varias Ubicaciones</h2>
+    <form method="POST" action="{% url 'agregar_varias_ubicaciones' %}">
+        {% csrf_token %}
+        <div id="ubicaciones-container">
+            <div class="row mb-3">
+                <div class="col-md-5">
+                    <input type="text" name="nombreUbicacion[]" class="form-control" placeholder="Nombre de la ubicación" required>
+                </div>
+                <div class="col-md-5">
+                    <input type="text" name="descripcionUbicacion[]" class="form-control" placeholder="Descripción (opcional)">
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-secondary add-row">Agregar una ubicación extra</button>
+                </div>
+            </div>
+        </div>
+        <div class="text-end">
+            <button type="submit" class="btn btn-success">Guardar</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelector('.add-row').addEventListener('click', function () {
+            const container = document.getElementById('ubicaciones-container');
+            const newRow = document.createElement('div');
+            newRow.className = 'row mb-3';
+            newRow.innerHTML = `
+                <div class="col-md-5">
+                    <input type="text" name="nombreUbicacion[]" class="form-control" placeholder="Nombre de la ubicación" required>
+                </div>
+                <div class="col-md-5">
+                    <input type="text" name="descripcionUbicacion[]" class="form-control" placeholder="Descripción (opcional)">
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger remove-row">Eliminar</button>
+                </div>
+            `;
+            container.appendChild(newRow);
+
+            newRow.querySelector('.remove-row').addEventListener('click', function () {
+                newRow.remove();
+            });
+        });
+    });
+</script>
+{% endblock %}

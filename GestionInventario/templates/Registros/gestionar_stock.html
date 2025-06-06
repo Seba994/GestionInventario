@@ -1,58 +1,61 @@
-{% extends 'base.html' %}
-{% load static %}
+    {% extends 'base.html' %}
+    {% load static %}
 
-{% block content %}
-<div class="container py-4">
+    {% block content %}
+    <div class="container py-4">
 
-    <!-- 🔹 Información del juego -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <img src="{{ juego.imagen.url }}" class="img-fluid rounded shadow" alt="Imagen del juego">
+        <!-- 🔹 Información del juego -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <img src="{{ juego.imagen.url }}" class="img-fluid rounded shadow" alt="Imagen del juego">
+            </div>
+            <div class="col-md-9">
+                <h2>{{ juego.nombreJuego }}</h2>
+                <p><strong>Código de Barra:</strong> {{ juego.codigoDeBarra }}</p>
+                <p><strong>Consola:</strong> {{ juego.consola }}</p>
+                <p><strong>Distribución:</strong> {{ juego.distribucion }}</p>
+                <p><strong>Clasificación:</strong> {{ juego.clasificacion }}</p>
+                <p><strong>Descripcion:</strong> {{ juego.descripcion }}</p>
+            </div>
         </div>
-        <div class="col-md-9">
-            <h2>{{ juego.nombreJuego }}</h2>
-            <p><strong>Código de Barra:</strong> {{ juego.codigoDeBarra }}</p>
-            <p><strong>Consola:</strong> {{ juego.consola }}</p>
-            <p><strong>Distribución:</strong> {{ juego.distribucion }}</p>
-            <p><strong>Clasificación:</strong> {{ juego.clasificacion }}</p>
-        </div>
+
+        <!-- 🔁 Listado o mensaje de stock -->
+        {% if stocks.exists %}
+            <h4>Ubicaciones con Stock</h4>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Ubicación</th>
+                        <th>Cantidad</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stocks %}
+                    <tr>
+                        <td>{{ stock.ubicacion.nombreUbicacion }}</td>
+                        <td>{{ stock.cantidad }}</td>
+                        <td>
+                            <a href="{% url 'agregar_stock' juego.id %}" class="btn btn-success btn-sm">Sumar</a>
+                            <a href="{% url 'restar_stock' juego.id stock.idStock %}" class="btn btn-danger btn-sm">Retirar</a>
+
+                            
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="text-end">
+                <a href="{% url 'agregar_stock' juego.id %}" class="btn btn-primary">Agregar stock en nueva ubicación</a>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                Este juego no tiene stock asignado aún.
+            </div>
+            <div class="text-center">
+                <a href="{% url 'agregar_stock' juego.id %}" class="btn btn-primary">Agregar stock</a>
+            </div>
+        {% endif %}
+
     </div>
-
-    <!-- 🔁 Listado o mensaje de stock -->
-    {% if stocks.exists %}
-        <h4>Ubicaciones con Stock</h4>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Ubicación</th>
-                    <th>Cantidad</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for stock in stocks %}
-                <tr>
-                    <td>{{ stock.ubicacion.nombreUbicacion }}</td>
-                    <td>{{ stock.cantidad }}</td>
-                    <td>
-                        <a href="{% url 'agregar_stock' juego.id %}" class="btn btn-success btn-sm">Sumar</a>
-                        
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <div class="text-end">
-            <a href="{% url 'agregar_stock' juego.id %}" class="btn btn-primary">Agregar nueva ubicación</a>
-        </div>
-    {% else %}
-        <div class="alert alert-info">
-            Este juego no tiene stock asignado aún.
-        </div>
-        <div class="text-center">
-            <a href="{% url 'agregar_stock' juego.id %}" class="btn btn-primary">Agregar stock</a>
-        </div>
-    {% endif %}
-
-</div>
-{% endblock %}
+    {% endblock %}

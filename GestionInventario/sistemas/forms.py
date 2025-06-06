@@ -49,7 +49,11 @@ class RolForm(forms.ModelForm):
 class UbicacionForm(forms.ModelForm):
     class Meta:
         model = Ubicacion
-        fields = '__all__'
+        fields = ['nombreUbicacion', 'descripcionUbicacion']
+        widgets = {
+            'nombreUbicacion': forms.TextInput(attrs={'class': 'form-control'}),
+            'descripcionUbicacion': forms.TextInput(attrs={'class': 'form-control'}),
+        }
 
     def clean_nombreUbicacion(self):
         nombre = self.cleaned_data.get('nombreUbicacion')
