@@ -6,11 +6,16 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
-from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm
+from django.db.models import Sum
 from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion
+from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm
 from .decorators import rol_requerido
 import os
+from supabase import create_client, Client
+from GestionInventario.settings import SUPABASE_URL, SUPABASE_KEY
 
+# Inicializar el cliente de Supabase
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def crear_personal(request):
     if request.method == 'POST':
@@ -156,29 +161,99 @@ def registrar_ubicacion(request):
         form = UbicacionForm()
     return render(request, 'Registros/registrar_ubicaciones.html', {'form': form})
 
+def agregar_varias_ubicaciones(request):
+    if request.method == 'POST':
+        nombres = request.POST.getlist('nombreUbicacion[]')
+        descripciones = request.POST.getlist('descripcionUbicacion[]')
+        
+        for nombre, descripcion in zip(nombres, descripciones):
+            if nombre.strip():
+                Ubicacion.objects.create(
+                    nombreUbicacion=nombre.strip(),
+                    descripcionUbicacion=descripcion.strip() if descripcion else ''
+                )
+        messages.success(request, 'Ubicaciones agregadas correctamente.')
+        return redirect('lista_ubicaciones')
+
+    return render(request, 'ubicaciones/agregar_varias_ubicaciones.html')
+
+def buscar_ubicaciones(termino):
+    if termino:
+        return Ubicacion.objects.filter(nombreUbicacion__icontains=termino)
+    return Ubicacion.objects.all()
+
 # Vista para listar ubicaciones
 def lista_ubicaciones(request):
-    ubicaciones = Ubicacion.objects.all()
-    return render(request, 'ubicaciones/lista.html', {'ubicaciones': ubicaciones})
+    termino_busqueda = request.GET.get('search', '')
+    ubicaciones = buscar_ubicaciones(termino_busqueda)
+
+    paginator = Paginator(ubicaciones, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'ubicaciones': page_obj,
+        'page_obj': page_obj,
+        'search_term': termino_busqueda,
+    }
+    return render(request, 'ubicaciones/lista_ubicacion.html', context)
 
 # Vista para registrar juego
 @login_required(login_url='login')
 def registrar_juego(request):
     if request.method == 'POST':
         form = JuegoForm(request.POST, request.FILES)
+        
+        if not form.is_valid():
+            # Mostrar errores específicos
+            for field in form:
+                for error in field.errors:
+                    messages.error(request, f'Error en {field.label}: {error}')
+            for error in form.non_field_errors():
+                messages.error(request, f'Error: {error}')
+        
         if form.is_valid():
-            form.save()
-            messages.success(request, '✅ Juego registrado exitosamente.')
-            return redirect('listar_juegos_con_stock')
-        else:
-            messages.error(request, '❌ Error al registrar el juego. Revisa el formulario.') 
+            try:
+                # Si hay imagen, la procesamos
+                if 'imagen' in request.FILES:
+                    imagen = request.FILES['imagen']
+                    nombre = f"{imagen.name}"
+                    resultado = upload_image_to_supabase(imagen, nombre)
+                    
+                    if resultado["success"]:
+                        url_imagen = f"https://{SUPABASE_URL.split('//')[1]}/storage/v1/object/public/img-juegos/{nombre}"
+                        juego = form.save(commit=False)
+                        juego.imagen = url_imagen
+                        juego.save()
+                    else:
+                        messages.error(request, f'❌ Error al subir la imagen: {resultado["error"]}')
+                        return render(request, 'Registros/registrar_juego.html', {'form': form})
+                else:
+                    juego = form.save()
 
+                accion = request.POST.get('action')
+                if accion == 'guardar_otro':
+                    messages.success(request, '✅ Juego registrado exitosamente. Puedes agregar otro.')
+                    return redirect('registrar_juego')
+                elif accion == 'guardar_stock':
+                    messages.success(request, '✅ Juego registrado. Redirigiendo a gestión de stock.')
+                    return redirect('gestionar_stock', id=juego.id)
+                else:
+                    messages.success(request, '✅ Juego registrado exitosamente.')
+                    return redirect('listar_juegos_con_stock')
+            
+            except Exception as e:
+                messages.error(request, f'❌ Error al guardar: {str(e)}')
+                print(f"Error: {str(e)}")
     else:
         form = JuegoForm()
-    return render(request, 'Registros/registrar_juego.html', {'form': form})
- 
 
-# Vista para listar juegos
+    return render(request, 'Registros/registrar_juego.html', {
+        'form': form,
+        'form_errors': form.errors.items() if hasattr(form, 'errors') else None
+    })
+
+  # Vista para listar juegos
 def lista_juegos(request):
     juegos = Juego.objects.all()
     return render(request, 'juegos/lista_con_stock.html', {'juegos': juegos})
@@ -279,7 +354,7 @@ def lista_juegos_con_stock(request):
     distribuciones = Distribucion.objects.all()
     clasificaciones = Clasificacion.objects.all()
     estados = Estado.objects.all()
-    ubicaciones = Ubicacion.objects.all()
+    ubicaciones = Ubicacion.objects.all()   
     context = {
         'juegos': juegos,
         'consolas': consolas,
@@ -293,12 +368,13 @@ def lista_juegos_con_stock(request):
 
 def modificar_juego_id(request, id):
     juego = get_object_or_404(Juego, id=id)
- 
+    
     if request.method == 'POST':
         form = ModificarJuegoForm(request.POST, instance=juego)
         if form.is_valid():
             form.save()
             return redirect('listar_juegos_con_stock')  # manda a la lista de juegos
+        
     else:
         form = ModificarJuegoForm(instance=juego)
     
@@ -366,3 +442,119 @@ def agregar_stock(request, juego_id):
         'juego': juego,
         'ubicaciones': ubicaciones
     })
+
+
+def subir_imagen(request):
+    if request.method == 'POST' and request.FILES['imagen']:
+        imagen = request.FILES['imagen']
+        nombre = f"{imagen.name}"
+        resultado = upload_image_to_supabase(imagen, nombre)
+        if resultado.get('error') is None:
+            return JsonResponse({"url": resultado.get('path')})
+        else:
+            return JsonResponse({"error": resultado['error']['message']})
+
+
+
+#subir imagenes al bucket de supabase
+def upload_image_to_supabase(file_obj, file_name, bucket='img-juegos'):
+    try:
+        # Lee el archivo en memoria
+        file_data = file_obj.read()
+        file_obj.seek(0)  # Regresa al inicio del archivo
+        
+        # Sube el archivo a Supabase
+        response = supabase.storage.from_(bucket).upload(
+            path=file_name,
+            file=file_data,
+            file_options={"content-type": file_obj.content_type}
+        )
+        
+        # Verifica si la respuesta es exitosa (no lanza excepción)
+        return {
+            "success": True,
+            "path": supabase.storage.from_(bucket).get_public_url(file_name)
+        }
+        
+    except Exception as e:
+        print(f"Error al subir imagen: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@login_required(login_url='login')
+def restar_stock(request, juego_id, stock_id):
+    stock = get_object_or_404(Stock, idStock=stock_id, juego__id=juego_id)
+
+    if stock.cantidad > 0:
+        stock.cantidad -= 1
+        stock.save()
+
+        stock_total = obtener_stock_total_juego(juego_id)
+
+        # Espacio reservado: Alerta cuando stock baja a 5
+        if stock_total == 5:
+            # TODO: Enviar alerta por correo: stock bajo (5 unidades)
+            print("ALERTA: El stock total ha bajado a 5 unidades.")
+            pass
+
+        # Espacio reservado: Alerta cuando stock baja a 0
+        if stock_total == 0:
+            # TODO: Enviar alerta por correo: stock agotado (0 unidades)
+            print("ALERTA: El stock total ha llegado a 0.")
+            pass
+
+        messages.success(request, f'Se ha restado una unidad del stock en {stock.ubicacion.nombreUbicacion}.')
+    else:
+        messages.warning(request, 'No se puede restar, ya que el stock ya está en 0.')
+
+    return redirect('gestionar_stock', id=juego_id)
+
+def obtener_stock_total_juego(juego_id):
+    total = Stock.objects.filter(juego_id=juego_id).aggregate(Sum('cantidad'))['cantidad__sum']
+    return total or 0
+
+
+def editar_ubicacion(request, id):
+    ubicacion = get_object_or_404(Ubicacion, idUbicacion=id)
+
+    if request.method == 'POST':
+        form = UbicacionForm(request.POST, instance=ubicacion)
+        if form.is_valid():
+            form.save()
+            return redirect('lista_ubicaciones')  # Cambia esto si tienes otro nombre en urls.py
+    else:
+        form = UbicacionForm(instance=ubicacion)
+
+    return render(request, 'ubicaciones/editar_ubicacion.html', {
+        'form': form,
+        'ubicacion': ubicacion,
+        'titulo': 'Editar Ubicación'
+    })
+
+
+def eliminar_ubicacion(request, id):
+    ubicacion = get_object_or_404(Ubicacion, pk=id)
+    
+    # Obtener todos los registros de stock de esta ubicación
+    stock_asociado = Stock.objects.filter(ubicacion=ubicacion)
+    
+    # Verificar si alguno tiene stock mayor a 0
+    if any(s.cantidad > 0 for s in stock_asociado):
+        messages.error(request, "No se puede eliminar la ubicación porque aún contiene stock.")
+        return redirect('lista_ubicaciones')
+    
+    # Eliminar los registros de stock asociados (todos son 0)
+    stock_asociado.delete()
+    
+    # Eliminar la ubicación
+    ubicacion.delete()
+    messages.success(request, "Ubicación eliminada correctamente.")
+    return redirect('lista_ubicaciones')
+
+def buscar_ubicaciones(termino):
+    if termino:
+        return Ubicacion.objects.filter(nombreUbicacion__icontains=termino)
+    return Ubicacion.objects.all()
+

@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User #Clase preestablecida de Django
 #permite crear los usuarios almacenando de forma segura sus contraseñas
 from django.db import models 
-
+from django.db.models import Sum
 #Modelo Rol
 
 class Rol(models.Model):
@@ -25,9 +25,13 @@ class Personal(models.Model):
 
 class Ubicacion(models.Model):
     
-    idUbicacion = models.IntegerField(primary_key=True, default=None)
+    idUbicacion = models.AutoField(primary_key=True)
     nombreUbicacion = models.CharField(max_length=100)
     descripcionUbicacion = models.CharField(max_length=255)
+
+    @property
+    def stock_total_local(self):
+        return self.stock.aggregate(total=Sum('cantidad'))['total'] or 0
 
     def __str__(self):
         return self.nombreUbicacion
@@ -93,7 +97,12 @@ class Juego(models.Model):
     clasificacion = models.ForeignKey(Clasificacion, on_delete=models.CASCADE)
     descripcion = models.ForeignKey(Descripcion, on_delete=models.SET_NULL, null=True, blank=True)
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
-    imagen = models.ImageField(upload_to='juegos/')
+    imagen = models.URLField(max_length=500, blank=True, null=True)  # Cambiado a URLField
+
+    @property
+    def stock_total(self):
+        from .models import Stock
+        return Stock.objects.filter(juego=self).aggregate(total=models.Sum('cantidad'))['total'] or 0
 
     def __str__(self):
         return self.nombreJuego   

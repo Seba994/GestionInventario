@@ -14,34 +14,38 @@
             <button type="submit" class="btn btn-primary">Buscar</button>
         </div>
     </form>
-
     {% if messages %}
-    <div class="messages mb-3">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
-            {{ message }}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
         </div>
-        {% endfor %}
-    </div>
+      {% endfor %}
     {% endif %}
+
 
     <table class="table">
         <thead>
             <tr>
-                <th>ID</th>
                 <th>Nombre</th>
                 <th>Descripción</th>
-                <th>Acciones</th>
+                <th></th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
             {% for ubicacion in ubicaciones %}
             <tr>
-                <td>{{ ubicacion.idUbicacion }}</td>
                 <td>{{ ubicacion.nombreUbicacion }}</td>
                 <td>{{ ubicacion.descripcionUbicacion }}</td>
                 <td>
-                    <a href="#" class="btn btn-sm btn-success">Editar</a>
+                    {% if ubicacion.idUbicacion %}
+                        <a href="{% url 'editar_ubicacion' ubicacion.idUbicacion %}" class="btn btn-sm btn-success">Editar</a>
+                    {% else %}
+                        <span class="text-danger">ID no válido</span>
+                    {% endif %}
+                </td>
+                <td>
                     <button type="button" class="btn btn-sm btn-danger" 
                             data-bs-toggle="modal" 
                             data-bs-target="#deleteModal{{ ubicacion.idUbicacion }}">
@@ -54,20 +58,30 @@
             <div class="modal fade" id="deleteModal{{ ubicacion.idUbicacion }}" tabindex="-1">
                 <div class="modal-dialog">
                     <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Confirmar eliminación</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            ¿Estás seguro de que deseas eliminar la ubicación "{{ ubicacion.nombreUbicacion }}"?
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <form action="#" method="post" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-danger">Eliminar</button>
-                            </form>
-                        </div>
+                        <form action="{% url 'eliminar_ubicacion' ubicacion.idUbicacion %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <div class="modal-header">
+                                <h5 class="modal-title">Confirmar eliminación</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>¿Estás seguro de que deseas eliminar la ubicación <strong>"{{ ubicacion.nombreUbicacion }}"</strong>?</p>
+                                {% if ubicacion.stock_set.exists %}
+                                    <p class="text-warning">Esta ubicación tiene juegos asignados. Solo se eliminará si el stock en todas es 0.</p>
+                                {% endif %}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-danger"
+                                    {% if ubicacion.stock_total_local != 0 %}
+                                        enabled
+                                    {% else %}
+                                        disabled
+                                    {% endif %}>
+                                    Eliminar
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -107,5 +121,11 @@
         </ul>
     </nav>
     {% endif %}
+<div class="text-end mt-4">
+    <a href="{% url 'agregar_varias_ubicaciones' %}" class="btn btn-primary">Agregar ubicaciones</a>
 </div>
+
+</div>
+
+
 {% endblock %}

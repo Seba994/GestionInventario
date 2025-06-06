@@ -1,3 +1,4 @@
 django          #Framework
 python-dotenv   #Variables de entorno
 psycopg2-binary
+supabase    #gestión de imagenes
