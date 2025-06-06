@@ -195,68 +195,68 @@ def lista_juegos(request):
 
 
 @login_required(login_url='login')
-def listar_juegos_con_stock(request):
-    # Obtener parámetros de filtrado
-    search_query = request.GET.get('search', '')
-    consola_id = request.GET.get('consola')
-    distribucion_id = request.GET.get('distribucion')
-    estado_id = request.GET.get('estado')
-    stock_filter = request.GET.get('stock', '')  # empty string by default
-    
+#def listar_juegos_con_stock(request):
+#    # Obtener parámetros de filtrado
+#    search_query = request.GET.get('search', '')
+#    consola_id = request.GET.get('consola')
+#    distribucion_id = request.GET.get('distribucion')
+#    estado_id = request.GET.get('estado')
+#    stock_filter = request.GET.get('stock', '')  # empty string by default
+#    
     # Obtener todos los juegos con sus relaciones y stock calculado
-    juegos_list = Juego.objects.select_related(
-        'consola', 'distribucion', 'clasificacion', 'estado'
-    ).annotate(
-        total_stock=Sum('stocks__cantidad', default=0)
-    ).order_by('nombreJuego')
+#    juegos_list = Juego.objects.select_related(
+#        'consola', 'distribucion', 'clasificacion', 'estado'
+#    ).annotate(
+#        total_stock=Sum('stocks__cantidad', default=0)
+#    ).order_by('nombreJuego')
     
     # Aplicar filtros
-    if search_query:
-        juegos_list = juegos_list.filter(
-            Q(nombreJuego__icontains=search_query) |
-            Q(codigoDeBarra__icontains=search_query)
-        )
+#    if search_query:
+#        juegos_list = juegos_list.filter(
+#            Q(nombreJuego__icontains=search_query) |
+#            Q(codigoDeBarra__icontains=search_query)
+#        )
     
-    if consola_id and consola_id.isdigit():
-        juegos_list = juegos_list.filter(consola__id=int(consola_id))
-    
-    if distribucion_id and distribucion_id.isdigit():
-        juegos_list = juegos_list.filter(distribucion__id=int(distribucion_id))
-    
-    if estado_id and estado_id.isdigit():
-        juegos_list = juegos_list.filter(estado__id=int(estado_id))
-    
+#    if consola_id and consola_id.isdigit():
+#        juegos_list = juegos_list.filter(consola__id=int(consola_id))
+#    
+#    if distribucion_id and distribucion_id.isdigit():
+#        juegos_list = juegos_list.filter(distribucion__id=int(distribucion_id))
+#    
+#    if estado_id and estado_id.isdigit():
+#        juegos_list = juegos_list.filter(estado__id=int(estado_id))
+#    
     # Filtro por stock
-    if stock_filter == 'available':
-        juegos_list = juegos_list.filter(total_stock__gt=0)
-    elif stock_filter == 'unavailable':
-        juegos_list = juegos_list.filter(Q(total_stock__lte=0) | Q(total_stock__isnull=True))
+#    if stock_filter == 'available':
+#        juegos_list = juegos_list.filter(total_stock__gt=0)
+#    elif stock_filter == 'unavailable':
+#        juegos_list = juegos_list.filter(Q(total_stock__lte=0) | Q(total_stock__isnull=True))
     
     # Paginación
-    paginator = Paginator(juegos_list, 25)  # 25 juegos por página
-    page_number = request.GET.get('page')
-    juegos = paginator.get_page(page_number)
+#    paginator = Paginator(juegos_list, 25)  # 25 juegos por página
+#    page_number = request.GET.get('page')
+#    juegos = paginator.get_page(page_number)
     
     # Obtener datos para los filtros
-    consolas = Consola.objects.all()
-    distribuciones = Distribucion.objects.all()
-    estados = Estado.objects.all()
+#    consolas = Consola.objects.all()
+#    distribuciones = Distribucion.objects.all()
+#    estados = Estado.objects.all()
     
-    context = {
-        'page_obj': juegos,  # coincidir con el template
-        'consolas': consolas,
-        'distribuciones': distribuciones,
-        'estados': estados,
-        'current_filters': {
-            'search': search_query,
-            'consola': int(consola_id) if consola_id and consola_id.isdigit() else '',
-            'distribucion': int(distribucion_id) if distribucion_id and distribucion_id.isdigit() else '',
-            'estado': int(estado_id) if estado_id and estado_id.isdigit() else '',
-            'stock': stock_filter,
-        },
-        'titulo': 'Listado de Juegos con Stock'
-    }
-    return render(request, 'juegos/lista_con_stock.html', context)
+#    context = {
+#        'page_obj': juegos,  # coincidir con el template
+#        'consolas': consolas,
+#        'distribuciones': distribuciones,
+#        'estados': estados,
+#        'current_filters': {
+#            'search': search_query,
+#            'consola': int(consola_id) if consola_id and consola_id.isdigit() else '',
+#            'distribucion': int(distribucion_id) if distribucion_id and distribucion_id.isdigit() else '',
+#            'estado': int(estado_id) if estado_id and estado_id.isdigit() else '',
+#            'stock': stock_filter,
+#        },
+#        'titulo': 'Listado de Juegos con Stock'
+#    }
+#    return render(request, 'juegos/lista_con_stock.html', context)
 
 
 

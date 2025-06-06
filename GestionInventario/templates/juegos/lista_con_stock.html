@@ -16,74 +16,76 @@
                            value="{{ current_filters.search }}" placeholder="Nombre, código o descripción">
                 </div>
                 
-                {% comment %}
-                    <!-- Filtro por consola -->
-                    <div class="col-md-2 mb-2">
-                        <label for="consola" class="form-label">Consola</label>
-                        <select class="form-select" id="consola" name="consola">
-                            <option value="all">Todas</option>
-                            {% for consola in consolas %}
-                            <option value="{{ consola.id }}" 
-                                    {% if current_filters.consola == consola.id %}selected{% endif %}>
-                                {{ consola.nombreConsola }}
-                            </option>
-                            {% endfor %}
-                        </select>
+
+{% comment %}
+                        <!-- Filtro por consola -->
+                        <div class="col-md-2 mb-2">
+                            <label for="consola" class="form-label">Consola</label>
+                            <select class="form-select" id="consola" name="consola">
+                                <option value="all">Todas</option>
+                                {% for consola in consolas %}
+                                <option value="{{ consola.id }}" 
+                                        {% if current_filters.consola == consola.id %}selected{% endif %}>
+                                    {{ consola.nombreConsola }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Filtro por distribución -->
+                        <div class="col-md-2 mb-2">
+                            <label for="distribucion" class="form-label">Distribución</label>
+                            <select class="form-select" id="distribucion" name="distribucion">
+                                <option value="all">Todas</option>
+                                {% for distribucion in distribuciones %}
+                                <option value="{{ distribucion.id }}" 
+                                        {% if current_filters.distribucion == distribucion.id %}selected{% endif %}>
+                                    {{ distribucion.localidadDistribucion }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Filtro por clasificación -->
+                        <div class="col-md-2 mb-2">
+                            <label for="clasificacion" class="form-label">Clasificación</label>
+                            <select class="form-select" id="clasificacion" name="clasificacion">
+                                <option value="all">Todas</option>
+                                {% for clasificacion in clasificaciones %}
+                                <option value="{{ clasificacion.id }}" 
+                                        {% if current_filters.clasificacion == clasificacion.id %}selected{% endif %}>
+                                    {{ clasificacion.descripcionClasificacion }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Filtro por estado -->
+                        <div class="col-md-2 mb-2">
+                            <label for="estado" class="form-label">Estado</label>
+                            <select class="form-select" id="estado" name="estado">
+                                <option value="all">Todos</option>
+                                {% for estado in estados %}
+                                <option value="{{ estado.id }}" 
+                                        {% if current_filters.estado == estado.id %}selected{% endif %}>
+                                    {{ estado.nombreEstado }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Filtro por stock -->
+                        <div class="col-md-2 mb-2">
+                            <label for="stock" class="form-label">Stock</label>
+                            <select class="form-select" id="stock" name="stock">
+                                <option value="" {% if current_filters.stock == 'all' %}selected{% endif %}>Todos</option>
+                                <option value="available" {% if current_filters.stock == 'available' %}selected{% endif %}>Disponible</option>
+                                <option value="unavailable" {% if current_filters.stock == 'unavailable' %}selected{% endif %}>Agotado</option>
+                            </select>
+                        </div>
                     </div>
-                    
-                    <!-- Filtro por distribución -->
-                    <div class="col-md-2 mb-2">
-                        <label for="distribucion" class="form-label">Distribución</label>
-                        <select class="form-select" id="distribucion" name="distribucion">
-                            <option value="all">Todas</option>
-                            {% for distribucion in distribuciones %}
-                            <option value="{{ distribucion.id }}" 
-                                    {% if current_filters.distribucion == distribucion.id %}selected{% endif %}>
-                                {{ distribucion.localidadDistribucion }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <!-- Filtro por clasificación -->
-                    <div class="col-md-2 mb-2">
-                        <label for="clasificacion" class="form-label">Clasificación</label>
-                        <select class="form-select" id="clasificacion" name="clasificacion">
-                            <option value="all">Todas</option>
-                            {% for clasificacion in clasificaciones %}
-                            <option value="{{ clasificacion.id }}" 
-                                    {% if current_filters.clasificacion == clasificacion.id %}selected{% endif %}>
-                                {{ clasificacion.descripcionClasificacion }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <!-- Filtro por estado -->
-                    <div class="col-md-2 mb-2">
-                        <label for="estado" class="form-label">Estado</label>
-                        <select class="form-select" id="estado" name="estado">
-                            <option value="all">Todos</option>
-                            {% for estado in estados %}
-                            <option value="{{ estado.id }}" 
-                                    {% if current_filters.estado == estado.id %}selected{% endif %}>
-                                {{ estado.nombreEstado }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <!-- Filtro por stock -->
-                    <div class="col-md-1 mb-2">
-                        <label for="stock" class="form-label">Stock</label>
-                        <select class="form-select" id="stock" name="stock">
-                            <option value="" {% if current_filters.stock == 'all' %}selected{% endif %}>Todos</option>
-                            <option value="available" {% if current_filters.stock == 'available' %}selected{% endif %}>Disponible</option>
-                            <option value="unavailable" {% if current_filters.stock == 'unavailable' %}selected{% endif %}>Agotado</option>
-                        </select>
-                    </div>
-                </div>
-                {% endcomment %}
+    
+{% endcomment %}
             
             <div class="row mt-2">
                 <div class="col-12 text-end">
