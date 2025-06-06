@@ -41,6 +41,16 @@
                             {% endif %}
                         </td>
                         <td>{{ user.ultimo_ingreso|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            <a href="{% url 'modificar_usuario' user.id %}" class="btn btn-sm btn-success">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                            <a href="{% url 'eliminar_usuario' user.id %}" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash-alt"></i> Eliminar
+                            </a>
+                            <a href="{% url 'modificar_rol_usuario' user.id %}" class="btn btn-sm btn-info">
+                                <i class="fas fa-user-cog"></i> Cambiar Rol
+                            </a>
                     </tr>
                     {% endfor %}
                 </tbody>
