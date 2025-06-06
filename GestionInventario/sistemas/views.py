@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm
 from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion
+from .decorators import rol_requerido
 import os
 
 
@@ -34,6 +35,7 @@ def crear_rol(request):
     return render(request, 'Registros/crear_rol.html', {'form': form})
 
 @login_required(login_url='login')
+@rol_requerido('dueño')  # Solo permite acceso a usuarios con rol "dueño"
 def gestion_usuarios(request):
     usuarios_data = []
 
@@ -51,7 +53,6 @@ def gestion_usuarios(request):
             })
         except Personal.DoesNotExist:
             continue
-
 
     return render(request, 'usuarios/gestion_usuarios.html', {
         'usuarios': usuarios_data
