@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmar Eliminación - Usuario {{ datos.nombre }}{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">¿Estás seguro de eliminar este usuario?</h5>
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2">{{ datos.nombre }}</h6>
+                            <p class="card-text">
+                                <strong>Usuario:</strong> {{ datos.username }}<br>
+                                <strong>Rol:</strong> {{ datos.rol }}<br>
+                                <strong>Teléfono:</strong> {{ datos.telefono }}
+                            </p>
+                            <p class="card-text">
+                                <span class="badge {% if datos.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {% if datos.is_active %}Activo{% else %}Inactivo{% endif %}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    <p class="text-danger">
+                        <i class="fas fa-exclamation-circle"></i> 
+                        Esta acción no se puede deshacer. Todos los datos relacionados se perderán.
+                    </p>
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'gestion_usuarios' %}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash-alt"></i> Confirmar Eliminación
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
