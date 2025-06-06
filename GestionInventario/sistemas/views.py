@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
-from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm
+from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm
 from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion
 import os
 
@@ -17,20 +17,12 @@ def crear_personal(request):
         if form.is_valid():
             form.save()
             return redirect('gestion_usuarios')  # Asegúrate que esa URL esté definida
+    
     else:
         form = PersonalForm()
 
-    usuario_logeado = Personal.objects.get(usuario=request.user)
-    
-    data_user = {
-        'is_authenticated': True,
-        'role': usuario_logeado.rol.rol,
-        'get_full_name': usuario_logeado.nombre,
-        'username' : usuario_logeado.usuario
-    }
-
     return render(request, 'Registros/crear_personal.html', 
-                  {'form': form, 'user':data_user})
+                  {'form': form})
 
 def crear_rol(request):
     if request.method == 'POST':
@@ -49,6 +41,7 @@ def gestion_usuarios(request):
         try:
             personal = Personal.objects.get(usuario=user)
             usuarios_data.append({
+                'id': user.id,           
                 'nombre': personal.nombre,
                 'rol': personal.rol.rol,
                 'usuario': user.username,
@@ -58,19 +51,79 @@ def gestion_usuarios(request):
             })
         except Personal.DoesNotExist:
             continue
-    
-    usuario_logeado = Personal.objects.get(usuario=request.user)
-    
-    data_user = {
-        'is_authenticated': True,
-        'role': usuario_logeado.rol.rol,
-        'get_full_name': usuario_logeado.nombre,
-        'username' : usuario_logeado.usuario
-    }
+
 
     return render(request, 'usuarios/gestion_usuarios.html', {
-        'usuarios': usuarios_data,
-        'user': data_user
+        'usuarios': usuarios_data
+    })
+
+def modificar_usuario(request, id):
+    usuario = get_object_or_404(User, id=id)
+    try:
+        personal = Personal.objects.get(usuario=usuario)
+    except Personal.DoesNotExist:
+        messages.error(request, "El usuario no tiene un perfil asociado.")
+        return redirect('gestion_usuarios')
+
+    if request.method == 'POST':
+        form = PersonalForm(request.POST, instance=usuario)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Usuario modificado correctamente.")
+            return redirect('gestion_usuarios')
+    else:
+        form = PersonalForm(instance=personal)
+
+    return render(request, 'Registros/crear_personal.html', {'form': form, 'usuario': usuario})
+
+def eliminar_usuario(request, id):
+    usuario = get_object_or_404(User, id=id)
+    try:
+        personal = Personal.objects.get(usuario=usuario)
+        # Crear un diccionario con la información combinada
+        datos_usuario = {
+            'id': usuario.id,
+            'username': usuario.username,
+            'is_active': usuario.is_active,
+            'nombre': personal.nombre,
+            'telefono': personal.telefono,
+            'rol': personal.rol,
+            'personal': personal,  # Agregamos el objeto personal completo
+            'usuario': usuario     # Agregamos el objeto usuario completo
+        }
+    except Personal.DoesNotExist:
+        messages.error(request, "El usuario no tiene un perfil asociado.")
+        return redirect('gestion_usuarios')
+
+    if request.method == 'POST':
+        personal.delete()
+        usuario.delete()
+        messages.success(request, "Usuario eliminado correctamente.")
+        return redirect('gestion_usuarios')
+
+    return render(request, 'Editar/confirmar_eliminacion_usuario.html', {
+        'datos': datos_usuario  # Pasamos el diccionario con todos los datos
+    })
+
+def modificar_rol(request, id):
+    # Obtener el personal directamente
+    personal = get_object_or_404(Personal, usuario_id=id)
+    
+    if request.method == 'POST':
+        form = ModificarRolUsuarioForm(request.POST, instance=personal)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Rol modificado correctamente.")
+            return redirect('gestion_usuarios')
+    else:
+        form = ModificarRolUsuarioForm(instance=personal)
+        # Debugging
+        print("Roles disponibles:", list(Rol.objects.all()))
+        print("Rol actual:", personal.rol)
+
+    return render(request, 'Registros/modificar_rol.html', {
+        'form': form,
+        'personal': personal
     })
 
 # Vista para registrar nuevas consolas
