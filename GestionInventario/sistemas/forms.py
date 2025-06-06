@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Personal, Rol , Ubicacion, Consola, Juego, Estado, Clasificacion, Descripcion
+from .models import Personal, Rol , Ubicacion, Consola, Juego, Estado, Clasificacion, Descripcion, Distribucion
 import logging
 class PersonalForm(UserCreationForm):
     
@@ -318,3 +318,25 @@ class ModificarJuegoForm(forms.ModelForm):
         widgets = {
             'descripcion': forms.Select(attrs={'class': 'form-select'})
         }
+
+#clase para crear filtros de búsqeuda de juegos        
+#class FiltroJuegoForm(forms.Form):
+#    nombre = forms.CharField(label="Nombre del juego", required=False)
+#    consola = forms.ModelChoiceField(queryset=Consola.objects.all(), required=False)
+#    clasificacion = forms.ModelChoiceField(queryset=Clasificacion.objects.all(), required=False)
+#    distribucion = forms.ModelChoiceField(queryset=Distribucion.objects.all(), required=False)
+#    estado = forms.ModelChoiceField(queryset=Estado.objects.all(), required=False)
+
+class FiltroJuegoForm(forms.Form):
+    STOCK_CHOICES = [
+    ('', 'Todos'),  # valor vacío cuando no se filtra
+    ('available', 'Con stock'),
+    ('unavailable', 'Sin stock'),
+]
+    nombre = forms.CharField(required=False)
+    
+    estado = forms.ModelChoiceField(queryset=Estado.objects.all(), required=False)
+    consola = forms.ModelChoiceField(queryset=Consola.objects.all(), required=False)
+    clasificacion = forms.ModelChoiceField(queryset=Clasificacion.objects.all(), required=False)
+    distribucion = forms.ModelChoiceField(queryset=Distribucion.objects.all(), required=False)
+    stock = forms.ChoiceField(choices=STOCK_CHOICES, required=False)

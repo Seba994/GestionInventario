@@ -1,17 +1,20 @@
 from multiprocessing import context
 from pyexpat.errors import messages
+from re import search
 from django.shortcuts import get_object_or_404, render, redirect
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
-from django.db.models import Sum
-from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm
+from django.db.models import Q, Sum, Case, When, IntegerField
+from django.db import models
+from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, FiltroJuegoForm
 from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion
 import os
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
 
 
 
@@ -191,26 +194,43 @@ def lista_juegos(request):
     return render(request, 'juegos/lista_con_stock.html', {'juegos': juegos})
 
 
+@login_required(login_url='login')
 def listar_juegos_con_stock(request):
     # Obtener parámetros de filtrado
     search_query = request.GET.get('search', '')
     consola_id = request.GET.get('consola')
+    distribucion_id = request.GET.get('distribucion')
     estado_id = request.GET.get('estado')
+    stock_filter = request.GET.get('stock', '')  # empty string by default
     
-    # Obtener todos los juegos con sus relaciones
+    # Obtener todos los juegos con sus relaciones y stock calculado
     juegos_list = Juego.objects.select_related(
         'consola', 'distribucion', 'clasificacion', 'estado'
-    ).all().order_by('nombreJuego')
+    ).annotate(
+        total_stock=Sum('stocks__cantidad', default=0)
+    ).order_by('nombreJuego')
     
     # Aplicar filtros
     if search_query:
-        juegos_list = juegos_list.filter(nombreJuego__icontains=search_query)
+        juegos_list = juegos_list.filter(
+            Q(nombreJuego__icontains=search_query) |
+            Q(codigoDeBarra__icontains=search_query)
+        )
     
-    if consola_id:
-        juegos_list = juegos_list.filter(consola__id=consola_id)
+    if consola_id and consola_id.isdigit():
+        juegos_list = juegos_list.filter(consola__id=int(consola_id))
     
-    if estado_id:
-        juegos_list = juegos_list.filter(estado__id=estado_id)
+    if distribucion_id and distribucion_id.isdigit():
+        juegos_list = juegos_list.filter(distribucion__id=int(distribucion_id))
+    
+    if estado_id and estado_id.isdigit():
+        juegos_list = juegos_list.filter(estado__id=int(estado_id))
+    
+    # Filtro por stock
+    if stock_filter == 'available':
+        juegos_list = juegos_list.filter(total_stock__gt=0)
+    elif stock_filter == 'unavailable':
+        juegos_list = juegos_list.filter(Q(total_stock__lte=0) | Q(total_stock__isnull=True))
     
     # Paginación
     paginator = Paginator(juegos_list, 25)  # 25 juegos por página
@@ -219,15 +239,27 @@ def listar_juegos_con_stock(request):
     
     # Obtener datos para los filtros
     consolas = Consola.objects.all()
+    distribuciones = Distribucion.objects.all()
     estados = Estado.objects.all()
     
     context = {
-        'juegos': juegos,
+        'page_obj': juegos,  # coincidir con el template
         'consolas': consolas,
+        'distribuciones': distribuciones,
         'estados': estados,
+        'current_filters': {
+            'search': search_query,
+            'consola': int(consola_id) if consola_id and consola_id.isdigit() else '',
+            'distribucion': int(distribucion_id) if distribucion_id and distribucion_id.isdigit() else '',
+            'estado': int(estado_id) if estado_id and estado_id.isdigit() else '',
+            'stock': stock_filter,
+        },
         'titulo': 'Listado de Juegos con Stock'
     }
-    return render(request, 'juegos/lista_juegos_con_stock.html', context)
+    return render(request, 'juegos/lista_con_stock.html', context)
+
+
+
 
 @login_required(login_url='login')
 def principal(request):
@@ -280,7 +312,7 @@ def buscar_juego_rol(request):
     juegos = Juego.objects.filter(rol__nombreRol__icontains=rol)
     return render(request, 'juegos/buscar_rol.html', {'juegos': juegos})
 
-def lista_juegos_con_stock(request):
+#def lista_juegos_con_stock(request):
     juegos = Juego.objects.all()
     consolas = Consola.objects.all()
     distribuciones = Distribucion.objects.all()
@@ -297,6 +329,267 @@ def lista_juegos_con_stock(request):
         'titulo': 'Listado de Juegos con Stock'
     }
     return render(request, 'juegos/lista_con_stock.html', context)
+
+#def listar_juegos_con_stock(request):
+    # Obtener parámetros de filtrado del GET request
+    search = request.GET.get('search', '')
+    consola = request.GET.get('consola')
+    distribucion = request.GET.get('distribucion')
+    clasificacion = request.GET.get('clasificacion')
+    estado = request.GET.get('estado')
+    stock = request.GET.get('stock', 'all')  # Valor por defecto 'all'
+
+    # Consulta base con annotate para el stock
+    juegos = Juego.objects.select_related(
+        'consola', 'distribucion', 'clasificacion', 'estado', 'descripcion'
+    ).annotate(
+        stock_total=Sum('stocks__cantidad')
+    ).order_by('nombreJuego')
+
+    # Aplicar filtros
+    if search:
+        juegos = juegos.filter(
+            Q(nombreJuego__icontains=search) |
+            Q(codigoDeBarra__icontains=search) |
+            Q(descripcion__detallesDescripcion__icontains=search)
+        )
+    
+    if consola:
+        juegos = juegos.filter(consola_id=consola)
+    
+    if distribucion:
+        juegos = juegos.filter(distribucion_id=distribucion)
+    
+    if clasificacion:
+        juegos = juegos.filter(clasificacion_id=clasificacion)
+    
+    if estado:
+        juegos = juegos.filter(estado_id=estado)
+    
+    # Filtro por stock
+    if stock == 'available':
+        juegos = juegos.filter(stock_total__gt=0)
+    elif stock == 'unavailable':
+        juegos = juegos.filter(stock_total__lte=0)
+
+    # Paginación
+    paginator = Paginator(juegos, 25)  # 25 items por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Obtener opciones para los selects
+    consolas = Consola.objects.all()
+    distribuciones = Distribucion.objects.all()
+    clasificaciones = Clasificacion.objects.all()
+    estados = Estado.objects.all()
+
+    context = {
+        'juegos': page_obj,
+        'page_obj': page_obj,
+        'consolas': consolas,
+        'distribuciones': distribuciones,
+        'clasificaciones': clasificaciones,
+        'estados': estados,
+        'current_filters': {
+            'search': search,
+            'consola': int(consola) if consola else '',
+            'distribucion': int(distribucion) if distribucion else '',
+            'clasificacion': int(clasificacion) if clasificacion else '',
+            'estado': int(estado) if estado else '',
+            'stock': stock,
+        }
+    }
+    return render(request, 'juegos/lista_con_stock.html', context)
+
+
+#def listar_juegos_con_stock(request):
+    # Obtener parámetros de filtrado
+    search = request.GET.get('search', '')
+    consola_id = request.GET.get('consola')
+    distribucion_id = request.GET.get('distribucion')
+    clasificacion_id = request.GET.get('clasificacion')
+    estado_id = request.GET.get('estado')
+    stock_filter = request.GET.get('stock', 'all')
+    
+    # Consulta base con select_related para optimización
+    juegos = Juego.objects.select_related(
+        'consola', 'distribucion', 'clasificacion', 'estado', 'descripcion'
+    ).prefetch_related('stocks').all()
+
+    # Aplicar filtros
+    if search:
+        juegos = juegos.filter(
+            Q(nombreJuego__icontains=search) |
+            Q(codigoDeBarra__icontains=search) |
+            Q(descripcion__detallesDescripcion__icontains=search)
+        )
+    
+    if consola_id:
+        juegos = juegos.filter(consola_id=consola_id)
+    
+    if distribucion_id:
+        juegos = juegos.filter(distribucion_id=distribucion_id)
+    
+    if clasificacion_id:
+        juegos = juegos.filter(clasificacion_id=clasificacion_id)
+    
+    if estado_id:
+        juegos = juegos.filter(estado_id=estado_id)
+    
+    # Filtro por stock - lo manejamos en Python ya que es una propiedad
+    filtered_juegos = []
+    for juego in juegos:
+        if stock_filter == 'all' or \
+           (stock_filter == 'available' and juego.stock_total > 0) or \
+           (stock_filter == 'unavailable' and juego.stock_total <= 0):
+            filtered_juegos.append(juego)
+    
+    # Paginación
+    paginator = Paginator(filtered_juegos, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'consolas': Consola.objects.all(),
+        'distribuciones': Distribucion.objects.all(),
+        'clasificaciones': Clasificacion.objects.all(),
+        'estados': Estado.objects.all(),
+        'current_filters': {
+            'search': search,
+            'consola': int(consola_id) if consola_id else '',
+            'distribucion': int(distribucion_id) if distribucion_id else '',
+            'clasificacion': int(clasificacion_id) if clasificacion_id else '',
+            'estado': int(estado_id) if estado_id else '',
+            'stock': stock_filter,
+        }
+    }
+    return render(request, 'juegos/lista_con_stock.html', context)
+
+
+
+#def listar_juegos_con_stock(request):
+    search = request.GET.get('search', '')
+    consola = request.GET.get('consola')
+    distribucion = request.GET.get('distribucion')
+    clasificacion = request.GET.get('clasificacion')
+    estado = request.GET.get('estado')
+    stock_filter = request.GET.get('stock', 'all')
+
+    juegos = Juego.objects.all().prefetch_related('stocks')  # Carga relacionada para eficiencia
+
+    # Aplicar filtros directamente en la queryset
+    if search:
+        juegos = juegos.filter(
+            models.Q(nombreJuego__icontains=search) |
+            models.Q(codigoDeBarra__icontains=search) |
+            models.Q(descripcion__detallesDescripcion__icontains=search)
+        )
+    if consola:
+        juegos = juegos.filter(consola_id=consola)
+    if distribucion:
+        juegos = juegos.filter(distribucion_id=distribucion)
+    if clasificacion:
+        juegos = juegos.filter(clasificacion_id=clasificacion)
+    if estado:
+        juegos = juegos.filter(estado_id=estado)
+
+    # Filtro por stock (aplicado a la queryset)
+    if stock_filter == 'available':
+        juegos = juegos.filter(stocks__gt=0) # Asumiendo que stock_total es una propiedad o anotación
+    elif stock_filter == 'unavailable':
+        juegos = juegos.filter(stocks__lte=0) # Asumiendo que stock_total es una propiedad o anotación
+
+    # Paginación
+    paginator = Paginator(juegos, 10)  # 10 juegos por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Contexto
+    context = {
+        'page_obj': page_obj,
+        'consolas': Consola.objects.all(),
+        'distribuciones': Distribucion.objects.all(),
+        'clasificaciones': Clasificacion.objects.all(),
+        'estados': Estado.objects.all(),
+        'current_filters': {
+            'search': search,
+            'consola': consola,
+            'distribucion': distribucion,
+            'clasificacion': clasificacion,
+            'estado': estado,
+            'stock': stock_filter,
+        }
+    }
+
+    return render(request, 'juegos/lista_con_stock.html', context)
+
+# views.py
+@login_required(login_url='login')
+
+def listar_juegos_con_stock(request):
+    # Obtén los filtros y normaliza a string para evitar None
+    search = request.GET.get('search', '').strip()
+    consola = request.GET.get('consola', '') 
+    distribucion = request.GET.get('distribucion', '')
+    clasificacion = request.GET.get('clasificacion', '')
+    estado = request.GET.get('estado', '')
+    stock = request.GET.get('stock', '')
+    
+    print("URL completa:", request.get_full_path())
+    print("GET params:", dict(request.GET))
+
+    juegos = Juego.objects.select_related('consola', 'distribucion', 'clasificacion', 'descripcion', 'estado')
+
+    if search:
+        juegos = juegos.filter(
+            Q(nombreJuego__icontains=search) |
+            Q(codigoDeBarra__icontains=search) |
+            Q(descripcion__detallesDescripcion__icontains=search)
+        )
+    if consola and consola != 'all':
+        juegos = juegos.filter(consola_id=consola)
+
+    if distribucion and distribucion != 'all':
+        juegos = juegos.filter(distribucion_id=distribucion)
+
+    if clasificacion and clasificacion != 'all':
+        juegos = juegos.filter(clasificacion_id=clasificacion)
+
+    if estado and estado != 'all':
+        juegos = juegos.filter(estado_id=estado)
+
+
+    if stock == 'available':
+        juegos = juegos.filter(stock_total__gt=0)
+    elif stock == 'unavailable':
+        juegos = juegos.filter(stock_total=0)
+
+    current_filters = {
+        'search': search,
+        'consola': consola,
+        'distribucion': distribucion,
+        'clasificacion': clasificacion,
+        'estado': estado,
+        'stock': stock,
+    }
+
+    paginator = Paginator(juegos.order_by('nombreJuego'), 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'juegos/lista_con_stock.html', {
+        'page_obj': page_obj,
+        'consolas': Consola.objects.all(),
+        'distribuciones': Distribucion.objects.all(),
+        'clasificaciones': Clasificacion.objects.all(),
+        'estados': Estado.objects.all(),
+        'current_filters': current_filters,
+    })
+
+
+
+
 
 def modificar_juego_id(request, id):
     juego = get_object_or_404(Juego, id=id)

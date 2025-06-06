@@ -42,7 +42,7 @@ class Ubicacion(models.Model):
 
 class Consola(models.Model):
 
-    idConsola = models.IntegerField(primary_key=True, default=None)
+    idConsola1 = models.IntegerField(primary_key=True, default=None)
     nombreConsola = models.CharField(max_length=100)
     marcaConsola = models.CharField(max_length=100)
 
