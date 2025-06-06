@@ -49,7 +49,11 @@ class RolForm(forms.ModelForm):
 class UbicacionForm(forms.ModelForm):
     class Meta:
         model = Ubicacion
-        fields = '__all__'
+        fields = ['nombreUbicacion', 'descripcionUbicacion']
+        widgets = {
+            'nombreUbicacion': forms.TextInput(attrs={'class': 'form-control'}),
+            'descripcionUbicacion': forms.TextInput(attrs={'class': 'form-control'}),
+        }
 
     def clean_nombreUbicacion(self):
         nombre = self.cleaned_data.get('nombreUbicacion')
@@ -87,6 +91,13 @@ class JuegoForm(forms.ModelForm):
     class Meta:
         model = Juego
         fields = ['codigoDeBarra', 'nombreJuego', 'consola', 'distribucion', 'clasificacion', 'descripcion', 'imagen']
+        labels = { "codigoDeBarra": "Código de Barra",
+                 "nombreJuego": "Nombre del Juego",
+                 "consola": "Consola",
+                 "distribucion": "Distribución",
+                 "clasificacion": "Clasificación",
+                 "descripcion": "Descripción",
+                 "imagen": "Imagen"}
         widgets = {
             'codigoDeBarra': forms.TextInput(attrs={'class': 'form-control'}),
             'nombreJuego': forms.TextInput(attrs={'class': 'form-control'}),
