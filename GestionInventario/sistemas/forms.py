@@ -32,6 +32,21 @@ class PersonalForm(UserCreationForm):
         for visible in self.visible_fields():
             visible.field.widget.attrs['class'] = 'form-control'
 
+class ModificarRolUsuarioForm(forms.ModelForm):
+    class Meta:
+        model = Personal  # Usamos Personal porque modificamos SU rol
+        fields = ['rol']  # Seleccionamos el campo rol que es un ForeignKey a Rol
+        labels = {
+            'rol': 'Rol del Usuario',
+        }
+        widgets = {
+            'rol': forms.Select(attrs={'class': 'form-select'})
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Aquí obtenemos la lista de roles disponibles del modelo Rol
+        self.fields['rol'].queryset = Rol.objects.all()
 
 
 class RolForm(forms.ModelForm):
@@ -177,3 +192,30 @@ class ModificarJuegoForm(forms.ModelForm):
         widgets = {
             'descripcion': forms.Select(attrs={'class': 'form-select'})
         }
+
+class ModificarPersonalForm(forms.ModelForm):
+    nombre = forms.CharField(label='Nombre completo')
+    telefono = forms.CharField(max_length=15)
+    rol = forms.ModelChoiceField(queryset=Rol.objects.all())
+
+    class Meta:
+        model = User
+        fields = ['username']
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and hasattr(self.instance, 'personal'):
+            self.fields['nombre'].initial = self.instance.personal.nombre
+            self.fields['telefono'].initial = self.instance.personal.telefono
+            self.fields['rol'].initial = self.instance.personal.rol
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if commit:
+            user.save()
+            personal = user.personal
+            personal.nombre = self.cleaned_data['nombre']
+            personal.telefono = self.cleaned_data['telefono']
+            personal.rol = self.cleaned_data['rol']
+            personal.save()
+        return user
