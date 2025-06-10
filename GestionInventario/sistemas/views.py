@@ -1,16 +1,21 @@
+import os
 from multiprocessing import context
 from pyexpat.errors import messages
+from re import search
 from django.shortcuts import get_object_or_404, render, redirect
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
-from django.db.models import Sum
+from django.db.models import Q, Sum, Case, When, IntegerField
+from django.db import models
+from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, FiltroJuegoForm
 from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion
 from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm
 from .decorators import rol_requerido
-import os
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 from supabase import create_client, Client
 from GestionInventario.settings import SUPABASE_URL, SUPABASE_KEY
 
@@ -144,7 +149,6 @@ def registrar_consola(request):
         form = ConsolaForm()
     return render(request, 'Registros/registrar_consolas.html', {'form': form})
 
-
 # Vista para listar consolas
 def lista_consolas(request):
     consolas = Consola.objects.all()
@@ -213,7 +217,7 @@ def registrar_juego(request):
                 messages.error(request, f'Error: {error}')
         
         if form.is_valid():
-            try:
+          try:
                 # Si hay imagen, la procesamos
                 if 'imagen' in request.FILES:
                     imagen = request.FILES['imagen']
@@ -257,45 +261,6 @@ def registrar_juego(request):
 def lista_juegos(request):
     juegos = Juego.objects.all()
     return render(request, 'juegos/lista_con_stock.html', {'juegos': juegos})
-
-
-def listar_juegos_con_stock(request):
-    # Obtener parámetros de filtrado
-    search_query = request.GET.get('search', '')
-    consola_id = request.GET.get('consola')
-    estado_id = request.GET.get('estado')
-    
-    # Obtener todos los juegos con sus relaciones
-    juegos_list = Juego.objects.select_related(
-        'consola', 'distribucion', 'clasificacion', 'estado'
-    ).all().order_by('nombreJuego')
-    
-    # Aplicar filtros
-    if search_query:
-        juegos_list = juegos_list.filter(nombreJuego__icontains=search_query)
-    
-    if consola_id:
-        juegos_list = juegos_list.filter(consola__id=consola_id)
-    
-    if estado_id:
-        juegos_list = juegos_list.filter(estado__id=estado_id)
-    
-    # Paginación
-    paginator = Paginator(juegos_list, 25)  # 25 juegos por página
-    page_number = request.GET.get('page')
-    juegos = paginator.get_page(page_number)
-    
-    # Obtener datos para los filtros
-    consolas = Consola.objects.all()
-    estados = Estado.objects.all()
-    
-    context = {
-        'juegos': juegos,
-        'consolas': consolas,
-        'estados': estados,
-        'titulo': 'Listado de Juegos con Stock'
-    }
-    return render(request, 'juegos/lista_juegos_con_stock.html', context)
 
 @login_required(login_url='login')
 def principal(request):
@@ -348,23 +313,66 @@ def buscar_juego_rol(request):
     juegos = Juego.objects.filter(rol__nombreRol__icontains=rol)
     return render(request, 'juegos/buscar_rol.html', {'juegos': juegos})
 
-def lista_juegos_con_stock(request):
-    juegos = Juego.objects.all()
-    consolas = Consola.objects.all()
-    distribuciones = Distribucion.objects.all()
-    clasificaciones = Clasificacion.objects.all()
-    estados = Estado.objects.all()
-    ubicaciones = Ubicacion.objects.all()   
-    context = {
-        'juegos': juegos,
-        'consolas': consolas,
-        'distribuciones': distribuciones,
-        'clasificaciones': clasificaciones,
-        'estados': estados,
-        'ubicaciones': ubicaciones,
-        'titulo': 'Listado de Juegos con Stock'
+@login_required(login_url='login')
+def listar_juegos_con_stock(request):
+    # Obtén los filtros y normaliza a string para evitar None
+    search = request.GET.get('search', '').strip()
+    consola = request.GET.get('consola', '') 
+    distribucion = request.GET.get('distribucion', '')
+    clasificacion = request.GET.get('clasificacion', '')
+    estado = request.GET.get('estado', '')
+    stock = request.GET.get('stock', '')
+    
+    print("URL completa:", request.get_full_path())
+    print("GET params:", dict(request.GET))
+
+    juegos = Juego.objects.select_related('consola', 'distribucion', 'clasificacion', 'descripcion', 'estado')
+
+    if search:
+        juegos = juegos.filter(
+            Q(nombreJuego__icontains=search) |
+            Q(codigoDeBarra__icontains=search) |
+            Q(descripcion__detallesDescripcion__icontains=search)
+        )
+    if consola and consola != 'all':
+        juegos = juegos.filter(consola_id=consola)
+
+    if distribucion and distribucion != 'all':
+        juegos = juegos.filter(distribucion_id=distribucion)
+
+    if clasificacion and clasificacion != 'all':
+        juegos = juegos.filter(clasificacion_id=clasificacion)
+
+    if estado and estado != 'all':
+        juegos = juegos.filter(estado_id=estado)
+
+
+    if stock == 'available':
+        juegos = juegos.filter(stock_total__gt=0)
+    elif stock == 'unavailable':
+        juegos = juegos.filter(stock_total=0)
+
+    current_filters = {
+        'search': search,
+        'consola': consola,
+        'distribucion': distribucion,
+        'clasificacion': clasificacion,
+        'estado': estado,
+        'stock': stock,
     }
-    return render(request, 'juegos/lista_con_stock.html', context)
+
+    paginator = Paginator(juegos.order_by('nombreJuego'), 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'juegos/lista_con_stock.html', {
+        'page_obj': page_obj,
+        'consolas': Consola.objects.all(),
+        'distribuciones': Distribucion.objects.all(),
+        'clasificaciones': Clasificacion.objects.all(),
+        'estados': Estado.objects.all(),
+        'current_filters': current_filters,
+    })
 
 def modificar_juego_id(request, id):
     juego = get_object_or_404(Juego, id=id)
@@ -443,7 +451,6 @@ def agregar_stock(request, juego_id):
         'ubicaciones': ubicaciones
     })
 
-
 def subir_imagen(request):
     if request.method == 'POST' and request.FILES['imagen']:
         imagen = request.FILES['imagen']
@@ -453,8 +460,6 @@ def subir_imagen(request):
             return JsonResponse({"url": resultado.get('path')})
         else:
             return JsonResponse({"error": resultado['error']['message']})
-
-
 
 #subir imagenes al bucket de supabase
 def upload_image_to_supabase(file_obj, file_name, bucket='img-juegos'):
@@ -515,7 +520,6 @@ def obtener_stock_total_juego(juego_id):
     total = Stock.objects.filter(juego_id=juego_id).aggregate(Sum('cantidad'))['cantidad__sum']
     return total or 0
 
-
 def editar_ubicacion(request, id):
     ubicacion = get_object_or_404(Ubicacion, idUbicacion=id)
 
@@ -532,7 +536,6 @@ def editar_ubicacion(request, id):
         'ubicacion': ubicacion,
         'titulo': 'Editar Ubicación'
     })
-
 
 def eliminar_ubicacion(request, id):
     ubicacion = get_object_or_404(Ubicacion, pk=id)
@@ -557,4 +560,3 @@ def buscar_ubicaciones(termino):
     if termino:
         return Ubicacion.objects.filter(nombreUbicacion__icontains=termino)
     return Ubicacion.objects.all()
-

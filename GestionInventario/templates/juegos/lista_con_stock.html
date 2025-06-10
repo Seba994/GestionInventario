@@ -1,87 +1,125 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>Juegos en Stock</h2>
-    
-    <!-- Buscador -->
-    <form method="get" class="mb-4">
-        <div class="input-group">
-            <input type="text" name="search" class="form-control" 
-                   placeholder="Buscar juegos..." value="{{ search_term }}">
-            <button type="submit" class="btn btn-primary">Buscar</button>
-        </div>
-    </form>
- <table class="table">
-    <thead>
-        <tr>
-            <th>Código De Barra </th>
-            <th>Nombre Del Juego</th>
-            <th>Consola</th>
-            <th>Distribucion</th>
-            <th>Clasificacion</th>
-            <th>Descripcion</th>
-            <th>Stock</th>
-            <th>Acciones</th>  
-        </tr>
-    </thead>
-    <tbody>
-        {% for juego in juegos %}  
-    <tr{% if juego.stock_total == 0 %}
-        class="table-danger"
-    {% elif juego.stock_total <= 5 %}
-        class="table-warning"
-    {% endif %}>
+<div class="container mt-3">
+    <h1>Juegos en Stock</h1>
+    <div class="card-body">
 
-        <td>{{ juego.codigoDeBarra }}</td>
-        <td>{{ juego.nombreJuego }}</td>
-        <td>{{ juego.consola.nombreConsola }}</td>
-        <td>{{ juego.distribucion.siglaDistribucion }}</td>
-        <td>{{ juego.clasificacion.descripcionClasificacion }}</td>
-        <td>{{ juego.descripcion.detallesDescripcion }}</td>
-        <td>{{ juego.stock_total }}</td>
-        <td> 
-            <a href="{% url 'modificar_juego_id' juego.id %}" class="btn btn-sm btn-success">Editar</a>
-            <a href="{% url 'eliminar_juego' juego.id %}" class="btn btn-sm btn-danger ml-2">Eliminar</a>
-            <a href="{% url 'gestionar_stock' juego.id %}" class="btn btn-sm btn-info ml-2">Gestionar Stock</a>
-        </td>
-            {% empty %}
+        <!-- Formulario de Filtros -->
+        <form method="get" class="mb-4 border p-3 bg-light rounded">
+            <div class="row">
+                <!-- Búsqueda general -->
+                <div class="mb-3">
+                    <label for="search" class="form-label">Buscar</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ current_filters.search }}" placeholder="Nombre, código o descripción">
+                </div>
+            </div>
+
+            <div class="row mt-2">
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Aplicar Filtros
+                    </button>
+                    <a href="{% url 'listar_juegos_con_stock' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Limpiar
+                    </a>
+                </div>
+            </div>
+        </form>
+
+        <!-- Tabla de resultados -->
+        <table class="table table-striped">
+            <thead class="table-dark">
                 <tr>
-                    <td colspan="4">No hay juegos registrados</td>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Consola</th>
+                    <th>Distribución</th>
+                    <th>Clasificación</th>
+                    <th>Descripción</th>
+                    <th>Stock</th>
+                    <th>Acciones</th>
                 </tr>
-        </tr>
+            </thead>
+            <tbody>
+                {% for juego in page_obj %}
+                <tr class="{% if juego.stock_total == 0 %}table-danger{% elif juego.stock_total <= 5 %}table-warning{% endif %}">
+                    <td>{{ juego.codigoDeBarra|default:"-" }}</td>
+                    <td>{{ juego.nombreJuego }}</td>
+                    <td>{{ juego.consola.nombreConsola }}</td>
+                    <td>{{ juego.distribucion.siglaDistribucion }}</td>
+                    <td>{{ juego.clasificacion.descripcionClasificacion }}</td>
+                    <td>{{ juego.descripcion.detallesDescripcion }}</td>
+                    <td>{{ juego.stock_total }}</td>
+                    <td class="text-nowrap">
+                        <a href="{% url 'modificar_juego_id' juego.id %}" class="btn btn-sm btn-success" title="Editar">
+                            Editar
+                        </a>
+                        <a href="{% url 'eliminar_juego' juego.id %}" class="btn btn-sm btn-danger" title="Eliminar">
+                            Eliminar
+                        </a>
+                        <a href="{% url 'gestionar_stock' juego.id %}" class="btn btn-sm btn-info" title="Stock">
+                            Gestionar stock
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-4">
+                        <i class="fas fa-info-circle fa-lg text-muted"></i><br>
+                        No se encontraron juegos con los filtros seleccionados
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-        {% endfor %}
-    </tbody>
-</table>
+        <!-- Paginación -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        &laquo; Primera
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        Anterior
+                    </a>
+                </li>
+                {% endif %}
 
-    <!-- Paginación -->
-    {% if page_obj.has_other_pages %}
-    <nav aria-label="Page navigation">
-        <ul class="pagination">
-            {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page=1&search={{ search_term }}">Primera</a>
-            </li>
-            {% endif %}
-            
-            {% for num in page_obj.paginator.page_range %}
-            {% if page_obj.number == num %}
-            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-            {% else %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ num }}&search={{ search_term }}">{{ num }}</a>
-            </li>
-            {% endif %}
-            {% endfor %}
-            
-            {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&search={{ search_term }}">Última</a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link">
+                        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        Siguiente
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        Última &raquo;
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        <div class="text-end mt-3">
+            <a href="{% url 'registrar_juego' %}" class="btn btn-success">
+                <i class="fas fa-plus-circle"></i> Agregar Juego
+            </a>
+        </div>
+
+    </div>
 </div>
 {% endblock %}
