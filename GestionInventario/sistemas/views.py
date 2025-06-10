@@ -7,12 +7,11 @@ from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
-from django.db.models import Q, Sum, Case, When, IntegerField
-from django.db import models
-from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, FiltroJuegoForm
+from django.http import  JsonResponse
+from django.db.models import Q, Sum
+from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm
 from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion
-from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm
+from .forms import  ModificarJuegoForm, ModificarRolUsuarioForm
 from .decorators import rol_requerido
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -27,7 +26,7 @@ def crear_personal(request):
         form = PersonalForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('gestion_usuarios')  # Asegúrate que esa URL esté definida
+            return redirect('gestion_usuarios')  
     
     else:
         form = PersonalForm()
@@ -217,7 +216,7 @@ def registrar_juego(request):
                 messages.error(request, f'Error: {error}')
         
         if form.is_valid():
-          try:
+            try:
                 # Si hay imagen, la procesamos
                 if 'imagen' in request.FILES:
                     imagen = request.FILES['imagen']
@@ -345,7 +344,6 @@ def listar_juegos_con_stock(request):
 
     if estado and estado != 'all':
         juegos = juegos.filter(estado_id=estado)
-
 
     if stock == 'available':
         juegos = juegos.filter(stock_total__gt=0)
@@ -527,7 +525,7 @@ def editar_ubicacion(request, id):
         form = UbicacionForm(request.POST, instance=ubicacion)
         if form.is_valid():
             form.save()
-            return redirect('lista_ubicaciones')  # Cambia esto si tienes otro nombre en urls.py
+            return redirect('lista_ubicaciones') 
     else:
         form = UbicacionForm(instance=ubicacion)
 
