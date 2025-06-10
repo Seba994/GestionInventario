@@ -26,6 +26,7 @@ def crear_personal(request):
         form = PersonalForm(request.POST)
         if form.is_valid():
             form.save()
+            messages.success(request, "Personal creado correctamente.")
             return redirect('gestion_usuarios')  
     
     else:
@@ -39,6 +40,8 @@ def crear_rol(request):
         form = RolForm(request.POST)
         if form.is_valid():
             form.save()
+            messages.success(request, "Rol creado correctamente.")
+            return redirect('gestion_usuarios')  
     else:
         form = RolForm()
     return render(request, 'Registros/crear_rol.html', {'form': form})
