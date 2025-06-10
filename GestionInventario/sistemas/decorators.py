@@ -16,6 +16,6 @@ def rol_requerido(rol_nombre):
                     return redirect('principal')
             except Personal.DoesNotExist:
                 messages.error(request, "No tienes un perfil asociado.")
-                return redirect('principal')
+                return redirect('inicio')
         return _wrapped_view
     return decorator
