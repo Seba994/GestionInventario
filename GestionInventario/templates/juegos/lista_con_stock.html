@@ -1,92 +1,21 @@
-
 {% extends "base.html" %}
-
 
 {% block content %}
 <div class="container mt-3">
     <h1>Juegos en Stock</h1>
     <div class="card-body">
+
         <!-- Formulario de Filtros -->
         <form method="get" class="mb-4 border p-3 bg-light rounded">
             <div class="row">
                 <!-- Búsqueda general -->
-                <div class=" mb-3">
+                <div class="mb-3">
                     <label for="search" class="form-label">Buscar</label>
                     <input type="text" class="form-control" id="search" name="search" 
                            value="{{ current_filters.search }}" placeholder="Nombre, código o descripción">
                 </div>
-                
+            </div>
 
-{% comment %}
-                        <!-- Filtro por consola -->
-                        <div class="col-md-2 mb-2">
-                            <label for="consola" class="form-label">Consola</label>
-                            <select class="form-select" id="consola" name="consola">
-                                <option value="all">Todas</option>
-                                {% for consola in consolas %}
-                                <option value="{{ consola.id }}" 
-                                        {% if current_filters.consola == consola.id %}selected{% endif %}>
-                                    {{ consola.nombreConsola }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <!-- Filtro por distribución -->
-                        <div class="col-md-2 mb-2">
-                            <label for="distribucion" class="form-label">Distribución</label>
-                            <select class="form-select" id="distribucion" name="distribucion">
-                                <option value="all">Todas</option>
-                                {% for distribucion in distribuciones %}
-                                <option value="{{ distribucion.id }}" 
-                                        {% if current_filters.distribucion == distribucion.id %}selected{% endif %}>
-                                    {{ distribucion.localidadDistribucion }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <!-- Filtro por clasificación -->
-                        <div class="col-md-2 mb-2">
-                            <label for="clasificacion" class="form-label">Clasificación</label>
-                            <select class="form-select" id="clasificacion" name="clasificacion">
-                                <option value="all">Todas</option>
-                                {% for clasificacion in clasificaciones %}
-                                <option value="{{ clasificacion.id }}" 
-                                        {% if current_filters.clasificacion == clasificacion.id %}selected{% endif %}>
-                                    {{ clasificacion.descripcionClasificacion }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <!-- Filtro por estado -->
-                        <div class="col-md-2 mb-2">
-                            <label for="estado" class="form-label">Estado</label>
-                            <select class="form-select" id="estado" name="estado">
-                                <option value="all">Todos</option>
-                                {% for estado in estados %}
-                                <option value="{{ estado.id }}" 
-                                        {% if current_filters.estado == estado.id %}selected{% endif %}>
-                                    {{ estado.nombreEstado }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <!-- Filtro por stock -->
-                        <div class="col-md-2 mb-2">
-                            <label for="stock" class="form-label">Stock</label>
-                            <select class="form-select" id="stock" name="stock">
-                                <option value="" {% if current_filters.stock == 'all' %}selected{% endif %}>Todos</option>
-                                <option value="available" {% if current_filters.stock == 'available' %}selected{% endif %}>Disponible</option>
-                                <option value="unavailable" {% if current_filters.stock == 'unavailable' %}selected{% endif %}>Agotado</option>
-                            </select>
-                        </div>
-                    </div>
-    
-{% endcomment %}
-            
             <div class="row mt-2">
                 <div class="col-12 text-end">
                     <button type="submit" class="btn btn-primary">
@@ -115,7 +44,7 @@
             </thead>
             <tbody>
                 {% for juego in page_obj %}
-                <tr class="{% if juego.stock_total == 0 %}table-danger{% elif juego.stocks_total <= 5 %}table-warning{% endif %}">
+                <tr class="{% if juego.stock_total == 0 %}table-danger{% elif juego.stock_total <= 5 %}table-warning{% endif %}">
                     <td>{{ juego.codigoDeBarra|default:"-" }}</td>
                     <td>{{ juego.nombreJuego }}</td>
                     <td>{{ juego.consola.nombreConsola }}</td>
@@ -145,7 +74,7 @@
                 {% endfor %}
             </tbody>
         </table>
-        
+
         <!-- Paginación -->
         {% if page_obj.has_other_pages %}
         <nav aria-label="Page navigation">
@@ -162,13 +91,13 @@
                     </a>
                 </li>
                 {% endif %}
-                
+
                 <li class="page-item disabled">
                     <span class="page-link">
                         Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
                     </span>
                 </li>
-                
+
                 {% if page_obj.has_next %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
@@ -184,12 +113,13 @@
             </ul>
         </nav>
         {% endif %}
-        
+
         <div class="text-end mt-3">
             <a href="{% url 'registrar_juego' %}" class="btn btn-success">
                 <i class="fas fa-plus-circle"></i> Agregar Juego
             </a>
         </div>
+
     </div>
 </div>
 {% endblock %}

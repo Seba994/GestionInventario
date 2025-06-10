@@ -1,3 +1,4 @@
+import os
 from multiprocessing import context
 from pyexpat.errors import messages
 from re import search
@@ -11,12 +12,15 @@ from django.db.models import Q, Sum, Case, When, IntegerField
 from django.db import models
 from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, FiltroJuegoForm
 from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion
-import os
+from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm
+from .decorators import rol_requerido
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from supabase import create_client, Client
+from GestionInventario.settings import SUPABASE_URL, SUPABASE_KEY
 
-
-
+# Inicializar el cliente de Supabase
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def crear_personal(request):
     if request.method == 'POST':
@@ -24,20 +28,12 @@ def crear_personal(request):
         if form.is_valid():
             form.save()
             return redirect('gestion_usuarios')  # Asegúrate que esa URL esté definida
+    
     else:
         form = PersonalForm()
 
-    usuario_logeado = Personal.objects.get(usuario=request.user)
-    
-    data_user = {
-        'is_authenticated': True,
-        'role': usuario_logeado.rol.rol,
-        'get_full_name': usuario_logeado.nombre,
-        'username' : usuario_logeado.usuario
-    }
-
     return render(request, 'Registros/crear_personal.html', 
-                  {'form': form, 'user':data_user})
+                  {'form': form})
 
 def crear_rol(request):
     if request.method == 'POST':
@@ -49,6 +45,7 @@ def crear_rol(request):
     return render(request, 'Registros/crear_rol.html', {'form': form})
 
 @login_required(login_url='login')
+@rol_requerido('dueño')  # Solo permite acceso a usuarios con rol "dueño"
 def gestion_usuarios(request):
     usuarios_data = []
 
@@ -56,6 +53,7 @@ def gestion_usuarios(request):
         try:
             personal = Personal.objects.get(usuario=user)
             usuarios_data.append({
+                'id': user.id,           
                 'nombre': personal.nombre,
                 'rol': personal.rol.rol,
                 'usuario': user.username,
@@ -65,19 +63,78 @@ def gestion_usuarios(request):
             })
         except Personal.DoesNotExist:
             continue
-    
-    usuario_logeado = Personal.objects.get(usuario=request.user)
-    
-    data_user = {
-        'is_authenticated': True,
-        'role': usuario_logeado.rol.rol,
-        'get_full_name': usuario_logeado.nombre,
-        'username' : usuario_logeado.usuario
-    }
 
     return render(request, 'usuarios/gestion_usuarios.html', {
-        'usuarios': usuarios_data,
-        'user': data_user
+        'usuarios': usuarios_data
+    })
+
+def modificar_usuario(request, id):
+    usuario = get_object_or_404(User, id=id)
+    try:
+        personal = Personal.objects.get(usuario=usuario)
+    except Personal.DoesNotExist:
+        messages.error(request, "El usuario no tiene un perfil asociado.")
+        return redirect('gestion_usuarios')
+
+    if request.method == 'POST':
+        form = PersonalForm(request.POST, instance=usuario)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Usuario modificado correctamente.")
+            return redirect('gestion_usuarios')
+    else:
+        form = PersonalForm(instance=personal)
+
+    return render(request, 'Registros/crear_personal.html', {'form': form, 'usuario': usuario})
+
+def eliminar_usuario(request, id):
+    usuario = get_object_or_404(User, id=id)
+    try:
+        personal = Personal.objects.get(usuario=usuario)
+        # Crear un diccionario con la información combinada
+        datos_usuario = {
+            'id': usuario.id,
+            'username': usuario.username,
+            'is_active': usuario.is_active,
+            'nombre': personal.nombre,
+            'telefono': personal.telefono,
+            'rol': personal.rol,
+            'personal': personal,  # Agregamos el objeto personal completo
+            'usuario': usuario     # Agregamos el objeto usuario completo
+        }
+    except Personal.DoesNotExist:
+        messages.error(request, "El usuario no tiene un perfil asociado.")
+        return redirect('gestion_usuarios')
+
+    if request.method == 'POST':
+        personal.delete()
+        usuario.delete()
+        messages.success(request, "Usuario eliminado correctamente.")
+        return redirect('gestion_usuarios')
+
+    return render(request, 'Editar/confirmar_eliminacion_usuario.html', {
+        'datos': datos_usuario  # Pasamos el diccionario con todos los datos
+    })
+
+def modificar_rol(request, id):
+    # Obtener el personal directamente
+    personal = get_object_or_404(Personal, usuario_id=id)
+    
+    if request.method == 'POST':
+        form = ModificarRolUsuarioForm(request.POST, instance=personal)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Rol modificado correctamente.")
+            return redirect('gestion_usuarios')
+    else:
+        form = ModificarRolUsuarioForm(instance=personal)
+        # Debugging
+        print("Roles disponibles:", list(Rol.objects.all()))
+        print("Rol actual:", personal.rol)
+
+    return render(request, 'Registros/modificar_rol.html', {
+        'form': form,
+        'personal': personal
     })
 
 # Vista para registrar nuevas consolas
@@ -91,7 +148,6 @@ def registrar_consola(request):
     else:
         form = ConsolaForm()
     return render(request, 'Registros/registrar_consolas.html', {'form': form})
-
 
 # Vista para listar consolas
 def lista_consolas(request):
@@ -151,115 +207,60 @@ def lista_ubicaciones(request):
 def registrar_juego(request):
     if request.method == 'POST':
         form = JuegoForm(request.POST, request.FILES)
+        
+        if not form.is_valid():
+            # Mostrar errores específicos
+            for field in form:
+                for error in field.errors:
+                    messages.error(request, f'Error en {field.label}: {error}')
+            for error in form.non_field_errors():
+                messages.error(request, f'Error: {error}')
+        
         if form.is_valid():
-            juego = form.save()
-            accion = request.POST.get('action')
+          try:
+                # Si hay imagen, la procesamos
+                if 'imagen' in request.FILES:
+                    imagen = request.FILES['imagen']
+                    nombre = f"{imagen.name}"
+                    resultado = upload_image_to_supabase(imagen, nombre)
+                    
+                    if resultado["success"]:
+                        url_imagen = f"https://{SUPABASE_URL.split('//')[1]}/storage/v1/object/public/img-juegos/{nombre}"
+                        juego = form.save(commit=False)
+                        juego.imagen = url_imagen
+                        juego.save()
+                    else:
+                        messages.error(request, f'❌ Error al subir la imagen: {resultado["error"]}')
+                        return render(request, 'Registros/registrar_juego.html', {'form': form})
+                else:
+                    juego = form.save()
 
-            if accion == 'guardar_otro':
-                messages.success(request, '✅ Juego registrado exitosamente. Puedes agregar otro.')
-                return redirect('registrar_juego')
-
-            elif accion == 'guardar_stock':
-                messages.success(request, '✅ Juego registrado. Redirigiendo a gestión de stock.')
-                return redirect('gestionar_stock', id=juego.id)
-
-            else:
-                messages.success(request, '✅ Juego registrado exitosamente.')
-                return redirect('listar_juegos_con_stock')
-        else:
-            field_labels = {
-                'codigoDeBarra': 'Código de Barra',
-                'nombreJuego': 'Nombre del Juego',
-                'consola': 'Consola',
-                'distribucion': 'Distribución',
-                'clasificacion': 'Clasificación',
-                'descripcion': 'Descripción',
-                'imagen': 'Imagen'
-            }
+                accion = request.POST.get('action')
+                if accion == 'guardar_otro':
+                    messages.success(request, '✅ Juego registrado exitosamente. Puedes agregar otro.')
+                    return redirect('registrar_juego')
+                elif accion == 'guardar_stock':
+                    messages.success(request, '✅ Juego registrado. Redirigiendo a gestión de stock.')
+                    return redirect('gestionar_stock', id=juego.id)
+                else:
+                    messages.success(request, '✅ Juego registrado exitosamente.')
+                    return redirect('listar_juegos_con_stock')
             
-            for field, errors in form.errors.items():
-                field_name = field_labels.get(field, field)
-                for error in errors:
-                    messages.error(request, f"❌ Error en {field_name}: {error}")
-
+            except Exception as e:
+                messages.error(request, f'❌ Error al guardar: {str(e)}')
+                print(f"Error: {str(e)}")
     else:
         form = JuegoForm()
 
-    return render(request, 'Registros/registrar_juego.html', {'form': form})
- 
+    return render(request, 'Registros/registrar_juego.html', {
+        'form': form,
+        'form_errors': form.errors.items() if hasattr(form, 'errors') else None
+    })
 
-# Vista para listar juegos
+  # Vista para listar juegos
 def lista_juegos(request):
     juegos = Juego.objects.all()
     return render(request, 'juegos/lista_con_stock.html', {'juegos': juegos})
-
-
-@login_required(login_url='login')
-#def listar_juegos_con_stock(request):
-#    # Obtener parámetros de filtrado
-#    search_query = request.GET.get('search', '')
-#    consola_id = request.GET.get('consola')
-#    distribucion_id = request.GET.get('distribucion')
-#    estado_id = request.GET.get('estado')
-#    stock_filter = request.GET.get('stock', '')  # empty string by default
-#    
-    # Obtener todos los juegos con sus relaciones y stock calculado
-#    juegos_list = Juego.objects.select_related(
-#        'consola', 'distribucion', 'clasificacion', 'estado'
-#    ).annotate(
-#        total_stock=Sum('stocks__cantidad', default=0)
-#    ).order_by('nombreJuego')
-    
-    # Aplicar filtros
-#    if search_query:
-#        juegos_list = juegos_list.filter(
-#            Q(nombreJuego__icontains=search_query) |
-#            Q(codigoDeBarra__icontains=search_query)
-#        )
-    
-#    if consola_id and consola_id.isdigit():
-#        juegos_list = juegos_list.filter(consola__id=int(consola_id))
-#    
-#    if distribucion_id and distribucion_id.isdigit():
-#        juegos_list = juegos_list.filter(distribucion__id=int(distribucion_id))
-#    
-#    if estado_id and estado_id.isdigit():
-#        juegos_list = juegos_list.filter(estado__id=int(estado_id))
-#    
-    # Filtro por stock
-#    if stock_filter == 'available':
-#        juegos_list = juegos_list.filter(total_stock__gt=0)
-#    elif stock_filter == 'unavailable':
-#        juegos_list = juegos_list.filter(Q(total_stock__lte=0) | Q(total_stock__isnull=True))
-    
-    # Paginación
-#    paginator = Paginator(juegos_list, 25)  # 25 juegos por página
-#    page_number = request.GET.get('page')
-#    juegos = paginator.get_page(page_number)
-    
-    # Obtener datos para los filtros
-#    consolas = Consola.objects.all()
-#    distribuciones = Distribucion.objects.all()
-#    estados = Estado.objects.all()
-    
-#    context = {
-#        'page_obj': juegos,  # coincidir con el template
-#        'consolas': consolas,
-#        'distribuciones': distribuciones,
-#        'estados': estados,
-#        'current_filters': {
-#            'search': search_query,
-#            'consola': int(consola_id) if consola_id and consola_id.isdigit() else '',
-#            'distribucion': int(distribucion_id) if distribucion_id and distribucion_id.isdigit() else '',
-#            'estado': int(estado_id) if estado_id and estado_id.isdigit() else '',
-#            'stock': stock_filter,
-#        },
-#        'titulo': 'Listado de Juegos con Stock'
-#    }
-#    return render(request, 'juegos/lista_con_stock.html', context)
-
-
-
 
 @login_required(login_url='login')
 def principal(request):
@@ -312,221 +313,7 @@ def buscar_juego_rol(request):
     juegos = Juego.objects.filter(rol__nombreRol__icontains=rol)
     return render(request, 'juegos/buscar_rol.html', {'juegos': juegos})
 
-#def lista_juegos_con_stock(request):
-    juegos = Juego.objects.all()
-    consolas = Consola.objects.all()
-    distribuciones = Distribucion.objects.all()
-    clasificaciones = Clasificacion.objects.all()
-    estados = Estado.objects.all()
-    ubicaciones = Ubicacion.objects.all()   
-    context = {
-        'juegos': juegos,
-        'consolas': consolas,
-        'distribuciones': distribuciones,
-        'clasificaciones': clasificaciones,
-        'estados': estados,
-        'ubicaciones': ubicaciones,
-        'titulo': 'Listado de Juegos con Stock'
-    }
-    return render(request, 'juegos/lista_con_stock.html', context)
-
-#def listar_juegos_con_stock(request):
-    # Obtener parámetros de filtrado del GET request
-    search = request.GET.get('search', '')
-    consola = request.GET.get('consola')
-    distribucion = request.GET.get('distribucion')
-    clasificacion = request.GET.get('clasificacion')
-    estado = request.GET.get('estado')
-    stock = request.GET.get('stock', 'all')  # Valor por defecto 'all'
-
-    # Consulta base con annotate para el stock
-    juegos = Juego.objects.select_related(
-        'consola', 'distribucion', 'clasificacion', 'estado', 'descripcion'
-    ).annotate(
-        stock_total=Sum('stocks__cantidad')
-    ).order_by('nombreJuego')
-
-    # Aplicar filtros
-    if search:
-        juegos = juegos.filter(
-            Q(nombreJuego__icontains=search) |
-            Q(codigoDeBarra__icontains=search) |
-            Q(descripcion__detallesDescripcion__icontains=search)
-        )
-    
-    if consola:
-        juegos = juegos.filter(consola_id=consola)
-    
-    if distribucion:
-        juegos = juegos.filter(distribucion_id=distribucion)
-    
-    if clasificacion:
-        juegos = juegos.filter(clasificacion_id=clasificacion)
-    
-    if estado:
-        juegos = juegos.filter(estado_id=estado)
-    
-    # Filtro por stock
-    if stock == 'available':
-        juegos = juegos.filter(stock_total__gt=0)
-    elif stock == 'unavailable':
-        juegos = juegos.filter(stock_total__lte=0)
-
-    # Paginación
-    paginator = Paginator(juegos, 25)  # 25 items por página
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    # Obtener opciones para los selects
-    consolas = Consola.objects.all()
-    distribuciones = Distribucion.objects.all()
-    clasificaciones = Clasificacion.objects.all()
-    estados = Estado.objects.all()
-
-    context = {
-        'juegos': page_obj,
-        'page_obj': page_obj,
-        'consolas': consolas,
-        'distribuciones': distribuciones,
-        'clasificaciones': clasificaciones,
-        'estados': estados,
-        'current_filters': {
-            'search': search,
-            'consola': int(consola) if consola else '',
-            'distribucion': int(distribucion) if distribucion else '',
-            'clasificacion': int(clasificacion) if clasificacion else '',
-            'estado': int(estado) if estado else '',
-            'stock': stock,
-        }
-    }
-    return render(request, 'juegos/lista_con_stock.html', context)
-
-
-#def listar_juegos_con_stock(request):
-    # Obtener parámetros de filtrado
-    search = request.GET.get('search', '')
-    consola_id = request.GET.get('consola')
-    distribucion_id = request.GET.get('distribucion')
-    clasificacion_id = request.GET.get('clasificacion')
-    estado_id = request.GET.get('estado')
-    stock_filter = request.GET.get('stock', 'all')
-    
-    # Consulta base con select_related para optimización
-    juegos = Juego.objects.select_related(
-        'consola', 'distribucion', 'clasificacion', 'estado', 'descripcion'
-    ).prefetch_related('stocks').all()
-
-    # Aplicar filtros
-    if search:
-        juegos = juegos.filter(
-            Q(nombreJuego__icontains=search) |
-            Q(codigoDeBarra__icontains=search) |
-            Q(descripcion__detallesDescripcion__icontains=search)
-        )
-    
-    if consola_id:
-        juegos = juegos.filter(consola_id=consola_id)
-    
-    if distribucion_id:
-        juegos = juegos.filter(distribucion_id=distribucion_id)
-    
-    if clasificacion_id:
-        juegos = juegos.filter(clasificacion_id=clasificacion_id)
-    
-    if estado_id:
-        juegos = juegos.filter(estado_id=estado_id)
-    
-    # Filtro por stock - lo manejamos en Python ya que es una propiedad
-    filtered_juegos = []
-    for juego in juegos:
-        if stock_filter == 'all' or \
-           (stock_filter == 'available' and juego.stock_total > 0) or \
-           (stock_filter == 'unavailable' and juego.stock_total <= 0):
-            filtered_juegos.append(juego)
-    
-    # Paginación
-    paginator = Paginator(filtered_juegos, 25)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    context = {
-        'page_obj': page_obj,
-        'consolas': Consola.objects.all(),
-        'distribuciones': Distribucion.objects.all(),
-        'clasificaciones': Clasificacion.objects.all(),
-        'estados': Estado.objects.all(),
-        'current_filters': {
-            'search': search,
-            'consola': int(consola_id) if consola_id else '',
-            'distribucion': int(distribucion_id) if distribucion_id else '',
-            'clasificacion': int(clasificacion_id) if clasificacion_id else '',
-            'estado': int(estado_id) if estado_id else '',
-            'stock': stock_filter,
-        }
-    }
-    return render(request, 'juegos/lista_con_stock.html', context)
-
-
-
-#def listar_juegos_con_stock(request):
-    search = request.GET.get('search', '')
-    consola = request.GET.get('consola')
-    distribucion = request.GET.get('distribucion')
-    clasificacion = request.GET.get('clasificacion')
-    estado = request.GET.get('estado')
-    stock_filter = request.GET.get('stock', 'all')
-
-    juegos = Juego.objects.all().prefetch_related('stocks')  # Carga relacionada para eficiencia
-
-    # Aplicar filtros directamente en la queryset
-    if search:
-        juegos = juegos.filter(
-            models.Q(nombreJuego__icontains=search) |
-            models.Q(codigoDeBarra__icontains=search) |
-            models.Q(descripcion__detallesDescripcion__icontains=search)
-        )
-    if consola:
-        juegos = juegos.filter(consola_id=consola)
-    if distribucion:
-        juegos = juegos.filter(distribucion_id=distribucion)
-    if clasificacion:
-        juegos = juegos.filter(clasificacion_id=clasificacion)
-    if estado:
-        juegos = juegos.filter(estado_id=estado)
-
-    # Filtro por stock (aplicado a la queryset)
-    if stock_filter == 'available':
-        juegos = juegos.filter(stocks__gt=0) # Asumiendo que stock_total es una propiedad o anotación
-    elif stock_filter == 'unavailable':
-        juegos = juegos.filter(stocks__lte=0) # Asumiendo que stock_total es una propiedad o anotación
-
-    # Paginación
-    paginator = Paginator(juegos, 10)  # 10 juegos por página
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    # Contexto
-    context = {
-        'page_obj': page_obj,
-        'consolas': Consola.objects.all(),
-        'distribuciones': Distribucion.objects.all(),
-        'clasificaciones': Clasificacion.objects.all(),
-        'estados': Estado.objects.all(),
-        'current_filters': {
-            'search': search,
-            'consola': consola,
-            'distribucion': distribucion,
-            'clasificacion': clasificacion,
-            'estado': estado,
-            'stock': stock_filter,
-        }
-    }
-
-    return render(request, 'juegos/lista_con_stock.html', context)
-
-# views.py
 @login_required(login_url='login')
-
 def listar_juegos_con_stock(request):
     # Obtén los filtros y normaliza a string para evitar None
     search = request.GET.get('search', '').strip()
@@ -587,18 +374,15 @@ def listar_juegos_con_stock(request):
         'current_filters': current_filters,
     })
 
-
-
-
-
 def modificar_juego_id(request, id):
     juego = get_object_or_404(Juego, id=id)
- 
+    
     if request.method == 'POST':
         form = ModificarJuegoForm(request.POST, instance=juego)
         if form.is_valid():
             form.save()
             return redirect('listar_juegos_con_stock')  # manda a la lista de juegos
+        
     else:
         form = ModificarJuegoForm(instance=juego)
     
@@ -667,6 +451,43 @@ def agregar_stock(request, juego_id):
         'ubicaciones': ubicaciones
     })
 
+def subir_imagen(request):
+    if request.method == 'POST' and request.FILES['imagen']:
+        imagen = request.FILES['imagen']
+        nombre = f"{imagen.name}"
+        resultado = upload_image_to_supabase(imagen, nombre)
+        if resultado.get('error') is None:
+            return JsonResponse({"url": resultado.get('path')})
+        else:
+            return JsonResponse({"error": resultado['error']['message']})
+
+#subir imagenes al bucket de supabase
+def upload_image_to_supabase(file_obj, file_name, bucket='img-juegos'):
+    try:
+        # Lee el archivo en memoria
+        file_data = file_obj.read()
+        file_obj.seek(0)  # Regresa al inicio del archivo
+        
+        # Sube el archivo a Supabase
+        response = supabase.storage.from_(bucket).upload(
+            path=file_name,
+            file=file_data,
+            file_options={"content-type": file_obj.content_type}
+        )
+        
+        # Verifica si la respuesta es exitosa (no lanza excepción)
+        return {
+            "success": True,
+            "path": supabase.storage.from_(bucket).get_public_url(file_name)
+        }
+        
+    except Exception as e:
+        print(f"Error al subir imagen: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 @login_required(login_url='login')
 def restar_stock(request, juego_id, stock_id):
     stock = get_object_or_404(Stock, idStock=stock_id, juego__id=juego_id)
@@ -699,7 +520,6 @@ def obtener_stock_total_juego(juego_id):
     total = Stock.objects.filter(juego_id=juego_id).aggregate(Sum('cantidad'))['cantidad__sum']
     return total or 0
 
-
 def editar_ubicacion(request, id):
     ubicacion = get_object_or_404(Ubicacion, idUbicacion=id)
 
@@ -716,7 +536,6 @@ def editar_ubicacion(request, id):
         'ubicacion': ubicacion,
         'titulo': 'Editar Ubicación'
     })
-
 
 def eliminar_ubicacion(request, id):
     ubicacion = get_object_or_404(Ubicacion, pk=id)

@@ -96,6 +96,16 @@ DATABASES = {
     }
 }
 
+#Gestión de imagenes
+from supabase import create_client
+import os
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY") 
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

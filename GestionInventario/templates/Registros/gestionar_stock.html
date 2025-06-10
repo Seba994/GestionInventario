@@ -7,7 +7,7 @@
         <!-- 🔹 Información del juego -->
         <div class="row mb-4">
             <div class="col-md-3">
-                <img src="{{ juego.imagen.url }}" class="img-fluid rounded shadow" alt="Imagen del juego">
+                <img src="{{ juego.imagen }}" class="img-fluid rounded shadow" alt="Imagen del juego">
             </div>
             <div class="col-md-9">
                 <h2>{{ juego.nombreJuego }}</h2>
@@ -17,7 +17,8 @@
                 <p><strong>Clasificación:</strong> {{ juego.clasificacion }}</p>
                 <p><strong>Descripcion:</strong> {{ juego.descripcion }}</p>
             </div>
-        </div>
+
+       </div>
 
         <!-- 🔁 Listado o mensaje de stock -->
         {% if stocks.exists %}
