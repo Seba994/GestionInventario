@@ -94,7 +94,15 @@ class UbicacionForm(forms.ModelForm):
 class ConsolaForm(forms.ModelForm):
     class Meta:
         model = Consola
-        fields = '__all__'
+        fields = ['nombreConsola', 'marcaConsola']
+        labels = {
+            'nombreConsola': 'Nombre de la Consola',
+            'marcaConsola': 'Marca de la Consola'
+        }
+        widgets = {
+            'nombreConsola': forms.TextInput(attrs={'class': 'form-control'}),
+            'marcaConsola': forms.TextInput(attrs={'class': 'form-control'}),
+        }
 
     def clean_nombreConsola(self):
         nombre = self.cleaned_data.get('nombreConsola')
@@ -361,23 +369,10 @@ class ModificarPersonalForm(forms.ModelForm):
     rol = forms.ModelChoiceField(queryset=Rol.objects.all())
 
     class Meta:
-        model = User
-        fields = ['username']
+        model = Personal
+        fields = ['nombre', 'telefono', 'rol']
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance and hasattr(self.instance, 'personal'):
-            self.fields['nombre'].initial = self.instance.personal.nombre
-            self.fields['telefono'].initial = self.instance.personal.telefono
-            self.fields['rol'].initial = self.instance.personal.rol
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        if commit:
-            user.save()
-            personal = user.personal
-            personal.nombre = self.cleaned_data['nombre']
-            personal.telefono = self.cleaned_data['telefono']
-            personal.rol = self.cleaned_data['rol']
-            personal.save()
-        return user
+        for field in self.fields:
+            self.fields[field].widget.attrs['class'] = 'form-control'

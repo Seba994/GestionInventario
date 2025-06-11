@@ -26,7 +26,8 @@
                         <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label }}</label>
                         {{ form.username }}
                         {% if personal %}
-                            <small class="text-muted">El nombre de usuario no se puede modificar.</small>
+                            <label class="form-control-plaintext">{{ form.username.value }}</label>
+                            <input type="text" class="form-control" value="{{ usuario.username }}" readonly>
                         {% endif %}
                         {% for error in form.username.errors %}
                             <div class="invalid-feedback d-block">{{ error }}</div>
