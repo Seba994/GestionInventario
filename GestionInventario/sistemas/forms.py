@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Personal, Rol , Ubicacion, Consola, Juego, Estado, Clasificacion, Descripcion, Distribucion
+from .models import Personal, Rol , Ubicacion, Consola, Juego, Estado, Clasificacion, Descripcion, Distribucion, Stock
 import logging
 class PersonalForm(UserCreationForm):
     
@@ -376,3 +376,34 @@ class ModificarPersonalForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields:
             self.fields[field].widget.attrs['class'] = 'form-control'
+            
+class CambiarUbicacionForm(forms.Form):
+    nueva_ubicacion = forms.ModelChoiceField(
+        queryset=Ubicacion.objects.all(),
+        label="Nueva Ubicación",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    cantidad = forms.IntegerField(
+        label="Cantidad a mover",
+        min_value=1,
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
+    motivo = forms.CharField(
+        label="Motivo del cambio (opcional)",
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Ej: Reorganización de inventario'
+        })
+    )
+
+    def __init__(self, *args, juego=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.juego = juego
+        if juego:
+            # filtro para excluir ubicaciones que ya tienen stock del juego
+            ubicaciones_con_stock = Stock.objects.filter(juego=juego).values_list('ubicacion', flat=True)
+            self.fields['nueva_ubicacion'].queryset = Ubicacion.objects.exclude(
+                idUbicacion__in=ubicaciones_con_stock
+            )

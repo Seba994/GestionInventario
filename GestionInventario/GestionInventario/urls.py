@@ -54,5 +54,6 @@ urlpatterns = [
     path('', RedirectView.as_view(url='principal/')),
     path('juegos/', views.lista_juegos, name='lista_juegos'),
     path('ajax/clasificaciones/', views.obtener_clasificaciones, name='ajax_clasificaciones'),
+    path('juego/<int:juego_id>/cambiar-ubicacion/', views.cambiar_ubicacion_juego, name='cambiar_ubicacion_juego'),
 
 ]
