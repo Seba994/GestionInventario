@@ -379,30 +379,97 @@ def listar_juegos_con_stock(request):
 
 def modificar_juego_id(request, id):
     juego = get_object_or_404(Juego, id=id)
-    
+
+    # Copiar valores antiguos **ANTES** de modificar el objeto con el formulario
+    valores_antiguos = {
+        'nombreJuego': juego.nombreJuego,
+        'codigoDeBarra': juego.codigoDeBarra,
+        'consola': str(juego.consola),
+        'distribucion': str(juego.distribucion),
+        'clasificacion': str(juego.clasificacion),
+        'descripcion': str(juego.descripcion) if juego.descripcion else '',
+        'estado': str(juego.estado)
+    }
+
     if request.method == 'POST':
         form = ModificarJuegoForm(request.POST, instance=juego)
         if form.is_valid():
-            form.save()
-            return redirect('listar_juegos_con_stock')  # manda a la lista de juegos
-        
+            juego = form.save()
+
+            valores_nuevos = {
+                'nombreJuego': juego.nombreJuego,
+                'codigoDeBarra': juego.codigoDeBarra,
+                'consola': str(juego.consola),
+                'distribucion': str(juego.distribucion),
+                'clasificacion': str(juego.clasificacion),
+                'descripcion': str(juego.descripcion) if juego.descripcion else '',
+                'estado': str(juego.estado)
+            }
+
+            for campo in valores_antiguos.keys():
+                if valores_antiguos[campo] != valores_nuevos[campo]:
+                    try:
+                        CambioJuego.objects.create(
+                            juego=juego,
+                            usuario=request.user.personal,
+                            campo_modificado=campo,
+                            valor_anterior=valores_antiguos[campo],
+                            valor_nuevo=valores_nuevos[campo]
+                        )
+                    except Exception as e:
+                        print(f"Error al guardar cambio: {e}")
+
+            messages.success(request, '✅ Juego modificado correctamente.')
+            return redirect('listar_juegos_con_stock')
+        else:
+            messages.error(request, '❌ Error al modificar el juego.')
     else:
         form = ModificarJuegoForm(instance=juego)
-    
+
     return render(request, 'juegos/modificar_juego.html', {
         'form': form,
         'juego': juego
     })
 
 def modificar_juego_codbarra(request, codigoDeBarra):
-    # Obtiene el juego por su código de barra
     juego = get_object_or_404(Juego, codigoDeBarra=codigoDeBarra)
     
     if request.method == 'POST':
         form = ModificarJuegoForm(request.POST, instance=juego)
         if form.is_valid():
-            form.save()
-            return redirect('con_stock')  # manda a la lista de juegos
+            # Obtener valores antiguos antes de guardar
+            valores_antiguos = {
+                'nombreJuego': juego.nombreJuego,
+                'codigoDeBarra': juego.codigoDeBarra,
+                'consola': juego.consola,
+                'distribucion': juego.distribucion,
+                'clasificacion': juego.clasificacion,
+                'descripcion': juego.descripcion,
+                'estado': juego.estado
+            }
+            
+            # Guardar el juego modificado
+            juego_modificado = form.save()
+            
+            # Comparar y registrar cambios
+            for campo, valor_antiguo in valores_antiguos.items():
+                valor_nuevo = getattr(juego_modificado, campo)
+                print(f"[DEBUG] Campo: {campo} | Antiguo: {valor_antiguo} | Nuevo: {valor_nuevo}")
+                if str(valor_antiguo) != str(valor_nuevo):
+                    print(f"valor_antiguo: {valor_antiguo}, valor_nuevo: {valor_nuevo}")
+                    CambioJuego.objects.create(
+                        juego=juego_modificado,
+                        usuario=request.user.personal,
+                        campo_modificado=campo,
+                        valor_anterior=str(valor_antiguo),
+                        valor_nuevo=str(valor_nuevo)
+                    )
+                    print(f"Cambio registrado en {campo}: {valor_antiguo} -> {valor_nuevo}")
+            
+            messages.success(request, '✅ Juego modificado correctamente.')
+            return redirect('listar_juegos_con_stock')
+        else:
+            messages.error(request, '❌ Error al modificar el juego.')
     else:
         form = ModificarJuegoForm(instance=juego)
     

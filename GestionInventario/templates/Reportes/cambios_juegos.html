@@ -2,58 +2,79 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-4">Cambios de Juegos</h2>
+    <h2 class="mb-4">Historial de Modificaciones de Juegos</h2>
 
     <!-- Filtros -->
     <form method="get" class="mb-4">
         <div class="row g-3">
             <div class="col-md-3">
-                <input type="date" name="fecha_inicio" class="form-control" placeholder="Fecha inicio">
+                <input type="date" name="fecha_inicio" class="form-control" 
+                       placeholder="Fecha inicio" value="{{ request.GET.fecha_inicio }}">
             </div>
             <div class="col-md-3">
-                <input type="date" name="fecha_fin" class="form-control" placeholder="Fecha fin">
+                <input type="date" name="fecha_fin" class="form-control" 
+                       placeholder="Fecha fin" value="{{ request.GET.fecha_fin }}">
             </div>
-            <div class="col-md-2">
+            <div class="col-md-4">
                 <select name="juego" class="form-select">
                     <option value="">Todos los juegos</option>
                     {% for juego in juegos %}
-                        <option value="{{ juego.id }}">{{ juego.nombreJuego }}</option>
+                        <option value="{{ juego.id }}" 
+                                {% if request.GET.juego|add:"0" == juego.id %}selected{% endif %}>
+                            {{ juego.nombreJuego }}
+                        </option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-2">
-                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter me-2"></i>Filtrar
+                </button>
             </div>
         </div>
     </form>
 
+    
+
     <!-- Tabla de cambios -->
     <div class="table-responsive">
-        <table class="table table-striped">
+        <table class="table table-striped table-hover">
             <thead>
                 <tr>
-                    <th>Fecha</th>
+                    <th>Fecha y Hora</th>
                     <th>Juego</th>
-                    <th>Tipo de Cambio</th>
-                    <th>Cantidad</th>
+                    <th>Campo Modificado</th>
+                    <th>Valor Anterior</th>
+                    <th>Valor Nuevo</th>
                     <th>Usuario</th>
                 </tr>
             </thead>
             <tbody>
                 {% for cambio in cambios %}
                     <tr>
-                        <td>{{ cambio.fecha }}</td>
+                        <td>{{ cambio.fecha|date:"d/m/Y H:i" }}</td>
                         <td>{{ cambio.juego.nombreJuego }}</td>
-                        <td>{{ cambio.tipoCambio }}</td>
-                        <td>{{ cambio.cantidad }}</td>
-                        <td>{{ cambio.usuario.username }}</td>
+                        <td>
+                            <span class="badge bg-info">{{ cambio.campo_modificado }}</span>
+                        </td>
+                        <td>
+                            <span class="text-danger">{{ cambio.valor_anterior }}</span>
+                        </td>
+                        <td>
+                            <span class="text-success">{{ cambio.valor_nuevo }}</span>
+                        </td>
+                        <td>{{ cambio.usuario.nombre }}</td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center">No se encontraron cambios.</td>
+                        <td colspan="6" class="text-center p-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No se encontraron registros de cambios.
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+</div>
 {% endblock %}
