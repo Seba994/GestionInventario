@@ -8,9 +8,11 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import  JsonResponse
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Count
+from django.db.models.functions import TruncDate
+from datetime import datetime, timedelta
 from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm
-from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion
+from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion, MovimientoStock, CambioJuego
 from .forms import  ModificarJuegoForm, ModificarRolUsuarioForm
 from .decorators import rol_requerido
 from rest_framework.decorators import api_view
@@ -432,6 +434,7 @@ def agregar_stock(request, juego_id):
     if request.method == 'POST':
         ubicacion_id = request.POST.get('ubicacion')
         cantidad = request.POST.get('cantidad')
+        #observacion = request.POST.get('observacion', '')
 
         if not ubicacion_id or not cantidad:
             messages.error(request, "Debes seleccionar una ubicación y una cantidad.")
@@ -439,7 +442,17 @@ def agregar_stock(request, juego_id):
             ubicacion = get_object_or_404(Ubicacion, idUbicacion=ubicacion_id)
             cantidad = int(cantidad)
 
-            # Verifica si ya existe un stock para esa ubicación
+            # Registrar el movimiento
+            MovimientoStock.objects.create(
+                juego=juego,
+                ubicacion=ubicacion,
+                usuario=request.user.personal,
+                tipo_movimiento='ENTRADA',
+                cantidad=cantidad,
+                observacion="Entrada de stock manual"
+            )
+
+            # Actualizar stock
             stock, created = Stock.objects.get_or_create(juego=juego, ubicacion=ubicacion)
             stock.cantidad += cantidad
             stock.save()
@@ -494,22 +507,32 @@ def restar_stock(request, juego_id, stock_id):
     stock = get_object_or_404(Stock, idStock=stock_id, juego__id=juego_id)
 
     if stock.cantidad > 0:
+        # Registrar el movimiento de salida
+        MovimientoStock.objects.create(
+            juego=stock.juego,
+            ubicacion=stock.ubicacion,
+            usuario=request.user.personal,
+            tipo_movimiento='SALIDA',
+            cantidad=1,  # Se resta una unidad
+            observacion='Salida de stock manual'
+        )
+
+        # Actualizar el stock
         stock.cantidad -= 1
         stock.save()
 
         stock_total = obtener_stock_total_juego(juego_id)
 
-        # Espacio reservado: Alerta cuando stock baja a 5
+        # Alertas de stock bajo
         if stock_total == 5:
             # TODO: Enviar alerta por correo: stock bajo (5 unidades)
             print("ALERTA: El stock total ha bajado a 5 unidades.")
-            pass
+            messages.warning(request, '⚠️ ALERTA: El stock total ha bajado a 5 unidades.')
 
-        # Espacio reservado: Alerta cuando stock baja a 0
         if stock_total == 0:
             # TODO: Enviar alerta por correo: stock agotado (0 unidades)
             print("ALERTA: El stock total ha llegado a 0.")
-            pass
+            messages.warning(request, '⚠️ ALERTA: El stock total ha llegado a 0.')
 
         messages.success(request, f'Se ha restado una unidad del stock en {stock.ubicacion.nombreUbicacion}.')
     else:
@@ -561,3 +584,62 @@ def buscar_ubicaciones(termino):
     if termino:
         return Ubicacion.objects.filter(nombreUbicacion__icontains=termino)
     return Ubicacion.objects.all()
+
+@login_required(login_url='login')
+def ver_movimientos_stock(request):
+    # Filtros
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
+    tipo = request.GET.get('tipo')
+    juego_id = request.GET.get('juego')
+
+    movimientos = MovimientoStock.objects.select_related('juego', 'ubicacion', 'usuario')
+
+    if fecha_inicio:
+        movimientos = movimientos.filter(fecha__gte=fecha_inicio)
+    if fecha_fin:
+        movimientos = movimientos.filter(fecha__lte=fecha_fin)
+    if tipo:
+        movimientos = movimientos.filter(tipo_movimiento=tipo)
+    if juego_id:
+        movimientos = movimientos.filter(juego_id=juego_id)
+
+    # Estadísticas
+    total_entradas = movimientos.filter(tipo_movimiento='ENTRADA').aggregate(
+        total=Sum('cantidad'))['total'] or 0
+    total_salidas = movimientos.filter(tipo_movimiento='SALIDA').aggregate(
+        total=Sum('cantidad'))['total'] or 0
+
+    context = {
+        'movimientos': movimientos,
+        'total_entradas': total_entradas,
+        'total_salidas': total_salidas,
+        'juegos': Juego.objects.all(),
+    }
+    return render(request, 'reportes/movimientos_stock.html', context)
+
+@login_required(login_url='login')
+def ver_cambios_juegos(request):
+    cambios = CambioJuego.objects.select_related('juego', 'usuario').order_by('-fecha')
+    return render(request, 'reportes/cambios_juegos.html', {'cambios': cambios})
+
+@login_required(login_url='login')
+def estadisticas_stock(request):
+    # Período de tiempo (últimos 30 días por defecto)
+    dias = int(request.GET.get('dias', 30))
+    fecha_inicio = datetime.now() - timedelta(days=dias)
+
+    # Movimientos por día
+    movimientos_diarios = MovimientoStock.objects.filter(
+        fecha__gte=fecha_inicio
+    ).annotate(
+        fecha_dia=TruncDate('fecha')
+    ).values('fecha_dia', 'tipo_movimiento').annotate(
+        total=Sum('cantidad')
+    ).order_by('fecha_dia', 'tipo_movimiento')
+
+    context = {
+        'movimientos_diarios': movimientos_diarios,
+        'dias_seleccionados': dias,
+    }
+    return render(request, 'reportes/estadisticas_stock.html', context)
