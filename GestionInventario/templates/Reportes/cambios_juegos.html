@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Cambios de Juegos</h2>
+
+    <!-- Filtros -->
+    <form method="get" class="mb-4">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <input type="date" name="fecha_inicio" class="form-control" placeholder="Fecha inicio">
+            </div>
+            <div class="col-md-3">
+                <input type="date" name="fecha_fin" class="form-control" placeholder="Fecha fin">
+            </div>
+            <div class="col-md-2">
+                <select name="juego" class="form-select">
+                    <option value="">Todos los juegos</option>
+                    {% for juego in juegos %}
+                        <option value="{{ juego.id }}">{{ juego.nombreJuego }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Tabla de cambios -->
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Juego</th>
+                    <th>Tipo de Cambio</th>
+                    <th>Cantidad</th>
+                    <th>Usuario</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cambio in cambios %}
+                    <tr>
+                        <td>{{ cambio.fecha }}</td>
+                        <td>{{ cambio.juego.nombreJuego }}</td>
+                        <td>{{ cambio.tipoCambio }}</td>
+                        <td>{{ cambio.cantidad }}</td>
+                        <td>{{ cambio.usuario.username }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">No se encontraron cambios.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

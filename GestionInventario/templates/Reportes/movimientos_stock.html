@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Movimientos de Stock</h2>
+    
+    <!-- Filtros -->
+    <form method="get" class="mb-4">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <input type="date" name="fecha_inicio" class="form-control" placeholder="Fecha inicio">
+            </div>
+            <div class="col-md-3">
+                <input type="date" name="fecha_fin" class="form-control" placeholder="Fecha fin">
+            </div>
+            <div class="col-md-2">
+                <select name="tipo" class="form-select">
+                    <option value="">Todos los tipos</option>
+                    <option value="ENTRADA">Entradas</option>
+                    <option value="SALIDA">Salidas</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="juego" class="form-select">
+                    <option value="">Todos los juegos</option>
+                    {% for juego in juegos %}
+                        <option value="{{ juego.id }}">{{ juego.nombreJuego }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Resumen -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Entradas</h5>
+                    <p class="card-text display-6">{{ total_entradas }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Salidas</h5>
+                    <p class="card-text display-6">{{ total_salidas }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de movimientos -->
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Juego</th>
+                    <th>Ubicación</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>Usuario</th>
+                    <th>Observación</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mov in movimientos %}
+                <tr>
+                    <td>{{ mov.fecha|date:"d/m/Y H:i" }}</td>
+                    <td>{{ mov.juego.nombreJuego }}</td>
+                    <td>{{ mov.ubicacion.nombreUbicacion }}</td>
+                    <td>
+                        <span class="badge {% if mov.tipo_movimiento == 'ENTRADA' %}bg-success{% else %}bg-danger{% endif %}">
+                            {{ mov.tipo_movimiento }}
+                        </span>
+                    </td>
+                    <td>{{ mov.cantidad }}</td>
+                    <td>{{ mov.usuario.nombre }}</td>
+                    <td>{{ mov.observacion|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
