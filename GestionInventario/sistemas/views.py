@@ -279,8 +279,45 @@ def detalle_juego(request, pk):
 def eliminar_juego(request, pk):
     juego = get_object_or_404(Juego, pk=pk)
     if request.method == 'POST':
-        juego.delete()
-        messages.success(request, 'Juego eliminado correctamente')
+        try:
+            estado_inactivo = Estado.objects.get(nombreEstado='Descontinuado') 
+            estado_anterior = juego.estado
+
+            # Registrar el cambio de estado
+            CambioJuego.objects.create(
+                juego=juego,
+                usuario=request.user.personal,
+                campo_modificado='estado',
+                valor_anterior=estado_anterior.nombreEstado,
+                valor_nuevo=estado_inactivo.nombreEstado
+            )
+            
+            # Registrar la salida del stock si existe
+            stocks = Stock.objects.filter(juego=juego)
+            for stock in stocks:
+                if stock.cantidad > 0:
+                    MovimientoStock.objects.create(
+                        juego=juego,
+                        ubicacion=stock.ubicacion,
+                        usuario=request.user.personal,
+                        tipo_movimiento='SALIDA',
+                        cantidad=stock.cantidad,
+                        observacion=f'Juego marcado como {estado_inactivo.nombreEstado}'
+                    )
+                    # Poner el stock en 0
+                    stock.cantidad = 0
+                    stock.save()
+            
+            # Cambiar el estado del juego
+            juego.estado = estado_inactivo
+            juego.save()
+            
+            messages.success(request, f'✅ Juego marcado como {estado_inactivo.nombreEstado} correctamente')
+        except Estado.DoesNotExist:
+            messages.error(request, '❌ Error: No existe el estado Inactivo en el sistema')
+        except Exception as e:
+            messages.error(request, f'❌ Error al cambiar estado del juego: {str(e)}')
+        
         return redirect('listar_juegos_con_stock')
     
     return render(request, 'Editar/confirmar_eliminacion.html', {'juego': juego})
