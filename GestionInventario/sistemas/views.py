@@ -733,6 +733,17 @@ def estadisticas_stock(request):
     dias = int(request.GET.get('dias', 30))
     fecha_inicio = datetime.now() - timedelta(days=dias)
 
+    # Calcular totales
+    entradas_totales = MovimientoStock.objects.filter(
+        fecha__gte=fecha_inicio,
+        tipo_movimiento='ENTRADA'
+    ).aggregate(total=Sum('cantidad'))['total'] or 0
+
+    salidas_totales = MovimientoStock.objects.filter(
+        fecha__gte=fecha_inicio,
+        tipo_movimiento='SALIDA'
+    ).aggregate(total=Sum('cantidad'))['total'] or 0
+
     # Movimientos por día
     movimientos_diarios = MovimientoStock.objects.filter(
         fecha__gte=fecha_inicio
@@ -745,8 +756,10 @@ def estadisticas_stock(request):
     context = {
         'movimientos_diarios': movimientos_diarios,
         'dias_seleccionados': dias,
+        'entradas_totales': entradas_totales,
+        'salidas_totales': salidas_totales
     }
-    return render(request, 'reportes/estadisticas_stock.html', context)
+    return render(request, 'Reportes/estadisticas_stock.html', context)
 
 from django.template.loader import get_template
 from xhtml2pdf import pisa
