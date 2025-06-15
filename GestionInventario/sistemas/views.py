@@ -816,3 +816,52 @@ def generar_pdf_movimientos(request):
         return HttpResponse('Error al generar el PDF')
     
     return response
+
+def generar_pdf_inventario(request):
+    # Obtener todos los juegos con su stock
+    juegos = Juego.objects.select_related(
+        'consola', 'distribucion', 'clasificacion', 
+        'descripcion', 'estado'
+    ).all()
+
+    # Calcular totales
+    total_juegos = juegos.count()
+    total_unidades = sum(juego.stock_total for juego in juegos)
+    
+    # Agrupar por consola para el resumen
+    resumen_consolas = {}
+    for juego in juegos:
+        if juego.consola.nombreConsola not in resumen_consolas:
+            resumen_consolas[juego.consola.nombreConsola] = {
+                'juegos': 0,
+                'unidades': 0
+            }
+        resumen_consolas[juego.consola.nombreConsola]['juegos'] += 1
+        resumen_consolas[juego.consola.nombreConsola]['unidades'] += juego.stock_total
+
+    context = {
+        'juegos': juegos,
+        'total_juegos': total_juegos,
+        'total_unidades': total_unidades,
+        'resumen_consolas': resumen_consolas,
+        'fecha_generacion': datetime.now(),
+    }
+
+    # Renderizar el template HTML
+    template = get_template('reportes/inventario_pdf.html')
+    html = template.render(context)
+
+    # Crear el PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="inventario_completo.pdf"'
+    
+    # Generar PDF
+    pisa_status = pisa.CreatePDF(
+        html, dest=response,
+        encoding='utf-8'
+    )
+
+    if pisa_status.err:
+        return HttpResponse('Error al generar el PDF')
+    
+    return response
