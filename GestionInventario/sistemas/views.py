@@ -7,7 +7,7 @@ from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import  JsonResponse
+from django.http import  JsonResponse, HttpResponse
 from django.db.models import Q, Sum, Count
 from django.db.models.functions import TruncDate
 from datetime import datetime, timedelta
@@ -643,3 +643,59 @@ def estadisticas_stock(request):
         'dias_seleccionados': dias,
     }
     return render(request, 'reportes/estadisticas_stock.html', context)
+
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from io import BytesIO
+
+def generar_pdf_movimientos(request):
+    # Obtener los mismos filtros que en ver_movimientos_stock
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
+    tipo = request.GET.get('tipo')
+    juego_id = request.GET.get('juego')
+
+    movimientos = MovimientoStock.objects.select_related('juego', 'ubicacion', 'usuario')
+
+    if fecha_inicio:
+        movimientos = movimientos.filter(fecha__gte=fecha_inicio)
+    if fecha_fin:
+        movimientos = movimientos.filter(fecha__lte=fecha_fin)
+    if tipo:
+        movimientos = movimientos.filter(tipo_movimiento=tipo)
+    if juego_id:
+        movimientos = movimientos.filter(juego_id=juego_id)
+
+    # Estadísticas
+    total_entradas = movimientos.filter(tipo_movimiento='ENTRADA').aggregate(
+        total=Sum('cantidad'))['total'] or 0
+    total_salidas = movimientos.filter(tipo_movimiento='SALIDA').aggregate(
+        total=Sum('cantidad'))['total'] or 0
+
+    # Preparar el contexto
+    context = {
+        'movimientos': movimientos,
+        'total_entradas': total_entradas,
+        'total_salidas': total_salidas,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        'fecha_generacion': datetime.now(),
+    }
+
+    # Renderizar el template HTML
+    template = get_template('reportes/movimientos_stock_pdf.html')
+    html = template.render(context)
+
+    # Crear el PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="reporte_movimientos.pdf"'
+    
+    # Generar PDF
+    pisa_status = pisa.CreatePDF(
+        html, dest=response,
+        encoding='utf-8')
+
+    if pisa_status.err:
+        return HttpResponse('Error al generar el PDF')
+    
+    return response

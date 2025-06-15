@@ -57,5 +57,6 @@ urlpatterns = [
     path('reportes/movimientos/', views.ver_movimientos_stock, name='movimientos_stock'),
     path('reportes/cambios-juegos/', views.ver_cambios_juegos, name='cambios_juegos'),
     path('reportes/estadisticas/', views.estadisticas_stock, name='estadisticas_stock'),
+    path('reportes/movimientos/pdf/', views.generar_pdf_movimientos, name='generar_pdf_movimientos'),
 
 ]

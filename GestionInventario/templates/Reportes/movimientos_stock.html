@@ -54,6 +54,16 @@
         </div>
     </div>
 
+    <!-- Botón para descargar PDF -->
+    <div class="row mb-4">
+        <div class="col-12 text-end">
+            <a href="{% url 'generar_pdf_movimientos' %}?{{ request.GET.urlencode }}" 
+               class="btn btn-danger">
+                <i class="fas fa-file-pdf me-2"></i>Descargar PDF
+            </a>
+        </div>
+    </div>
+
     <!-- Tabla de movimientos -->
     <div class="table-responsive">
         <table class="table table-striped">
