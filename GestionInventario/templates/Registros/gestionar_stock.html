@@ -48,7 +48,11 @@
             </table>
             <div class="text-end">
                 <a href="{% url 'agregar_stock' juego.id %}" class="btn btn-primary">Agregar stock en nueva ubicación</a>
+                        <a href="{% url 'cambiar_ubicacion_juego' juego.id %}" class="btn btn-info">
+            <i class="fas fa-exchange-alt"></i> Cambiar Ubicación
+                        </a>
             </div>
+
         {% else %}
             <div class="alert alert-info">
                 Este juego no tiene stock asignado aún.

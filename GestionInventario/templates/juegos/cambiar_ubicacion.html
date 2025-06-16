@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Cambiar Ubicación de {{ juego.nombreJuego }}</h2>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Stock Actual</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Ubicación</th>
+                        <th>Cantidad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stocks_actuales %}
+                    <tr>
+                        <td>{{ stock.ubicacion.nombreUbicacion }}</td>
+                        <td>{{ stock.cantidad }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5>Mover Stock</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label class="form-label">Ubicación de origen</label>
+                    <select name="ubicacion_origen" class="form-select" required>
+                        <option value="">Seleccione una ubicación</option>
+                        {% for stock in stocks_actuales %}
+                        <option value="{{ stock.ubicacion.idUbicacion }}">
+                            {{ stock.ubicacion.nombreUbicacion }} (Disponible: {{ stock.cantidad }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                {{ form.as_p }}
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-exchange-alt"></i> Mover Stock
+                </button>
+                <a href="{% url 'gestionar_stock' juego.id %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
