@@ -1,8 +1,10 @@
 import os
+import re
 import time
 from multiprocessing import context
 from pyexpat.errors import messages
 from re import search
+from urllib.parse import quote
 from django.shortcuts import get_object_or_404, render, redirect
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
@@ -206,59 +208,72 @@ def lista_ubicaciones(request):
     }
     return render(request, 'ubicaciones/lista_ubicacion.html', context)
 
+def sanitize_filename(filename):
+    """Limpia el nombre del archivo de caracteres especiales y espacios"""
+    # Obtener nombre y extensión
+    name, ext = os.path.splitext(filename)
+    
+    # Convertir a minúsculas y reemplazar caracteres no deseados
+    name = name.lower()
+    # Reemplazar espacios y caracteres especiales con guión bajo
+    name = re.sub(r'[\s]+', '_', name)  # Primero reemplazar espacios
+    name = re.sub(r'[^a-z0-9_]', '_', name)  # Luego otros caracteres especiales
+    # Eliminar guiones bajos múltiples
+    name = re.sub(r'_+', '_', name)
+    # Eliminar guiones al inicio y final
+    name = name.strip('_')
+    
+    # Generar nombre único para evitar colisiones
+    timestamp = str(int(time.time()))
+    return f"{timestamp}_{name}{ext.lower()}"
+
 # Vista para registrar juego
 @login_required(login_url='login')
 def registrar_juego(request):
     if request.method == 'POST':
         form = JuegoForm(request.POST, request.FILES)
-        
-        if not form.is_valid():
-            # Mostrar errores específicos
-            for field in form:
-                for error in field.errors:
-                    messages.error(request, f'Error en {field.label}: {error}')
-            for error in form.non_field_errors():
-                messages.error(request, f'Error: {error}')
-        
         if form.is_valid():
             try:
-                # Si hay imagen, la procesamos
                 if 'imagen' in request.FILES:
                     imagen = request.FILES['imagen']
-                    nombre = f"{imagen.name}"
-                    resultado = upload_image_to_supabase(imagen, nombre)
+                    nombre_limpio = sanitize_filename(imagen.name)
+                    resultado = upload_image_to_supabase(imagen, nombre_limpio)
                     
                     if resultado["success"]:
-                        url_imagen = f"https://{SUPABASE_URL.split('//')[1]}/storage/v1/object/public/img-juegos/{nombre}"
                         juego = form.save(commit=False)
-                        juego.imagen = url_imagen
+                        juego.imagen = resultado["path"]
                         juego.save()
+                        messages.success(request, '✅ Juego registrado exitosamente.')
                     else:
                         messages.error(request, f'❌ Error al subir la imagen: {resultado["error"]}')
                         return render(request, 'Registros/registrar_juego.html', {'form': form})
                 else:
                     juego = form.save()
-
+                    messages.success(request, '✅ Juego registrado exitosamente.')
+                
+                # Manejar la redirección según la acción
                 accion = request.POST.get('action')
                 if accion == 'guardar_otro':
-                    messages.success(request, '✅ Juego registrado exitosamente. Puedes agregar otro.')
                     return redirect('registrar_juego')
                 elif accion == 'guardar_stock':
-                    messages.success(request, '✅ Juego registrado. Redirigiendo a gestión de stock.')
                     return redirect('gestionar_stock', id=juego.id)
                 else:
-                    messages.success(request, '✅ Juego registrado exitosamente.')
                     return redirect('listar_juegos_con_stock')
-            
+                    
             except Exception as e:
                 messages.error(request, f'❌ Error al guardar: {str(e)}')
                 print(f"Error: {str(e)}")
+                return render(request, 'Registros/registrar_juego.html', {'form': form})
+        else:
+            # Mostrar errores específicos del formulario
+            for field in form:
+                for error in field.errors:
+                    messages.error(request, f'Error en {field.label}: {error}')
     else:
         form = JuegoForm()
 
     return render(request, 'Registros/registrar_juego.html', {
-        'form': form,
-        'form_errors': form.errors.items() if hasattr(form, 'errors') else None
+        'form': form
     })
 
   # Vista para listar juegos
@@ -582,22 +597,20 @@ def subir_imagen(request):
 #subir imagenes al bucket de supabase
 def upload_image_to_supabase(file_obj, file_name, bucket='img-juegos'):
     try:
-        # Genera un nombre único para evitar colisiones
-        unique_name = f"{int(time.time())}_{file_name}"
-        
+       
         # Lee el archivo en memoria
         file_data = file_obj.read()
         file_obj.seek(0)
         
         # Sube el archivo a Supabase
         response = supabase.storage.from_(bucket).upload(
-            path=unique_name,
+            path=file_name,
             file=file_data,
             file_options={"content-type": file_obj.content_type}
         )
         
-        # Construye la URL pública correctamente
-        public_url = supabase.storage.from_(bucket).get_public_url(unique_name)
+        # Obtener la URL pública
+        public_url = supabase.storage.from_(bucket).get_public_url(file_name)
         
         print(f"URL generada: {public_url}")  # Para debugging
         
