@@ -1,4 +1,5 @@
 import os
+import time
 from multiprocessing import context
 from pyexpat.errors import messages
 from re import search
@@ -465,25 +466,32 @@ def subir_imagen(request):
 #subir imagenes al bucket de supabase
 def upload_image_to_supabase(file_obj, file_name, bucket='img-juegos'):
     try:
+        # Genera un nombre único para evitar colisiones
+        unique_name = f"{int(time.time())}_{file_name}"
+        
         # Lee el archivo en memoria
         file_data = file_obj.read()
-        file_obj.seek(0)  # Regresa al inicio del archivo
+        file_obj.seek(0)
         
         # Sube el archivo a Supabase
         response = supabase.storage.from_(bucket).upload(
-            path=file_name,
+            path=unique_name,
             file=file_data,
             file_options={"content-type": file_obj.content_type}
         )
         
-        # Verifica si la respuesta es exitosa (no lanza excepción)
+        # Construye la URL pública correctamente
+        public_url = supabase.storage.from_(bucket).get_public_url(unique_name)
+        
+        print(f"URL generada: {public_url}")  # Para debugging
+        
         return {
             "success": True,
-            "path": supabase.storage.from_(bucket).get_public_url(file_name)
+            "path": public_url
         }
         
     except Exception as e:
-        print(f"Error al subir imagen: {str(e)}")
+        print(f"Error detallado al subir imagen: {str(e)}")
         return {
             "success": False,
             "error": str(e)
