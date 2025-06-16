@@ -3,7 +3,9 @@
 
     {% block content %}
     <div class="container py-4">
-
+        <a href="{% url 'listar_juegos_con_stock' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
         <!-- 🔹 Información del juego -->
         <div class="row mb-4">
             <div class="col-md-3">

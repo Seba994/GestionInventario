@@ -11,7 +11,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import  JsonResponse, HttpResponse
-from django.db.models import Q, Sum, Count
+from django.db.models import Q, Sum, Count, OuterRef, Subquery
 from django.db.models.functions import TruncDate
 from datetime import datetime, timedelta
 from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm
@@ -936,3 +936,58 @@ def generar_pdf_inventario(request):
     
     return response
 
+@login_required
+def listar_juegos_descontinuados(request):
+    # Obtener el estado "Descontinuado"
+    estado_descontinuado = get_object_or_404(Estado, nombreEstado='Descontinuado')
+    
+    # Obtener juegos descontinuados con relaciones necesarias
+    juegos = Juego.objects.filter(
+        estado=estado_descontinuado
+    ).select_related(
+        'consola', 'distribucion'
+    ).order_by('nombreJuego')
+    
+    # Paginación
+    paginator = Paginator(juegos, 10)  # 10 juegos por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'juegos/lista_descontinuados.html', {
+        'page_obj': page_obj,
+        'titulo': 'Juegos Descontinuados'
+    })
+    
+@login_required
+@rol_requerido('dueño')  # solo rol dueño pueden reactivar
+def reactivar_juego(request, pk):
+    juego = get_object_or_404(Juego, pk=pk)
+    estado_activo = Estado.objects.get(nombreEstado='Activo')
+    
+    if request.method == 'POST':
+        # Registrar el cambio
+        CambioJuego.objects.create(
+            juego=juego,
+            usuario=request.user.personal,
+            campo_modificado='estado',
+            valor_anterior=juego.estado.nombreEstado,
+            valor_nuevo=estado_activo.nombreEstado
+        )
+        
+        # Restaurar el stock si estaba registrado
+        if juego.stock_al_descontinuar > 0:
+            # Aquí puedes implementar la lógica para restaurar el stock
+            # a las ubicaciones originales si lo necesitas
+            pass
+            
+        # Cambiar el estado
+        juego.estado = estado_activo
+        juego.stock_al_descontinuar = 0  # Resetear este valor
+        juego.save()
+        
+        messages.success(request, f'El juego {juego.nombreJuego} ha sido reactivado.')
+        return redirect('listar_juegos_descontinuados')
+    
+    return render(request, 'juegos/confirmar_reactivar.html', {
+        'juego': juego
+    })
