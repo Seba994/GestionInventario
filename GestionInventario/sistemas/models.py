@@ -3,6 +3,7 @@
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Sum
+from django.utils import timezone
 
 class Rol(models.Model):
     """Modelo que define los roles de los usuarios en el sistema."""
@@ -105,3 +106,33 @@ class Stock(models.Model):
 
     def __str__(self):
         return f"{self.juego.nombreJuego} - {self.ubicacion.nombreUbicacion}: {self.cantidad}"
+
+class MovimientoStock(models.Model):
+    """Modelo para registrar movimientos de stock"""
+    TIPO_MOVIMIENTO = [
+        ('ENTRADA', 'Entrada'),
+        ('SALIDA', 'Salida'),
+    ]
+
+    juego = models.ForeignKey(Juego, on_delete=models.CASCADE)
+    ubicacion = models.ForeignKey(Ubicacion, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(Personal, on_delete=models.CASCADE)
+    tipo_movimiento = models.CharField(max_length=7, choices=TIPO_MOVIMIENTO)
+    cantidad = models.IntegerField()
+    fecha = models.DateTimeField(default=timezone.now)
+    observacion = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.tipo_movimiento} - {self.juego.nombreJuego} - {self.cantidad}"
+
+class CambioJuego(models.Model):
+    """Modelo para registrar cambios en los juegos"""
+    juego = models.ForeignKey(Juego, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(Personal, on_delete=models.CASCADE)
+    fecha = models.DateTimeField(default=timezone.now)
+    campo_modificado = models.CharField(max_length=100)
+    valor_anterior = models.TextField()
+    valor_nuevo = models.TextField()
+    
+    def __str__(self):
+        return f"Cambio en {self.juego.nombreJuego} - {self.campo_modificado}"

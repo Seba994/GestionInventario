@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Estadísticas de Stock</h2>
+
+    <!-- Selector de período -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Período de tiempo</label>
+                    <select name="dias" class="form-select" onchange="this.form.submit()">
+                        <option value="7" {% if dias_seleccionados == 7 %}selected{% endif %}>Últimos 7 días</option>
+                        <option value="30" {% if dias_seleccionados == 30 %}selected{% endif %}>Últimos 30 días</option>
+                        <option value="90" {% if dias_seleccionados == 90 %}selected{% endif %}>Últimos 90 días</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resumen estadístico -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Entradas Totales</h5>
+                </div>
+                <div class="card-body">
+                    <h3 class="text-success">{{ entradas_totales }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">Salidas Totales</h5>
+                </div>
+                <div class="card-body">
+                    <h3 class="text-danger">{{ salidas_totales }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de movimientos -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Movimientos de Stock por Día</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="graficoMovimientos"></canvas>
+        </div>
+    </div>
+
+    <!-- Tabla de movimientos diarios -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Detalle de Movimientos Diarios</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Entradas</th>
+                            <th>Salidas</th>
+                            <th>Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for movimiento in movimientos_diarios %}
+                        <tr>
+                            <td>{{ movimiento.fecha_dia|date:"d/m/Y" }}</td>
+                            <td class="text-success">
+                                {% if movimiento.tipo_movimiento == 'ENTRADA' %}
+                                    {{ movimiento.total }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </td>
+                            <td class="text-danger">
+                                {% if movimiento.tipo_movimiento == 'SALIDA' %}
+                                    {{ movimiento.total }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if movimiento.tipo_movimiento == 'ENTRADA' %}
+                                    <span class="text-success">+{{ movimiento.total }}</span>
+                                {% else %}
+                                    <span class="text-danger">-{{ movimiento.total }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">No hay movimientos registrados</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('graficoMovimientos').getContext('2d');
+    
+    // Preparar datos para el gráfico
+    const datos = {
+        labels: [{% for m in movimientos_diarios %}'{{ m.fecha_dia|date:"d/m/Y" }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [
+            {
+                label: 'Entradas',
+                data: [{% for m in movimientos_diarios %}{% if m.tipo_movimiento == 'ENTRADA' %}{{ m.total }}{% else %}0{% endif %}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                borderColor: 'rgb(75, 192, 192)',
+                borderWidth: 1
+            },
+            {
+                label: 'Salidas',
+                data: [{% for m in movimientos_diarios %}{% if m.tipo_movimiento == 'SALIDA' %}{{ m.total }}{% else %}0{% endif %}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                borderColor: 'rgb(255, 99, 132)',
+                borderWidth: 1
+            }
+        ]
+    };
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: datos,
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Movimientos de Stock por Día'
+                },
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Cantidad'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Fecha'
+                    }
+                }
+            },
+            barPercentage: 0.8
+        }
+    });
+});
+</script>
+{% endblock %}

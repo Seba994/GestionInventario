@@ -3,3 +3,5 @@ python-dotenv   #Variables de entorno
 psycopg2-binary
 supabase    #gestión de imagenes
 djangorestframework-3.16.0
+reportlab-4.4.1
+xhtml2pdf-0.2.17
