@@ -13,7 +13,7 @@ def rol_requerido(rol_nombre):
                     return view_func(request, *args, **kwargs)
                 else:
                     messages.error(request, "No tienes permisos para acceder a esta sección.")
-                    return redirect('principal')
+                    return redirect('inicio')
             except Personal.DoesNotExist:
                 messages.error(request, "No tienes un perfil asociado.")
                 return redirect('inicio')
