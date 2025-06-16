@@ -60,6 +60,8 @@ urlpatterns = [
     path('reportes/estadisticas/', views.estadisticas_stock, name='estadisticas_stock'),
     path('reportes/movimientos/pdf/', views.generar_pdf_movimientos, name='generar_pdf_movimientos'),
     path('reportes/inventario/pdf/', views.generar_pdf_inventario, name='generar_pdf_inventario'),
+    path('eliminar_alerta_stock/<int:juego_id>/', views.eliminar_alerta_stock, name='eliminar_alerta_stock'),
+
 
 
 ]

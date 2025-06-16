@@ -15,12 +15,15 @@ from django.db.models import Q, Sum, Count
 from django.db.models.functions import TruncDate
 from datetime import datetime, timedelta
 from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm
-from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion, MovimientoStock, CambioJuego
+from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion, MovimientoStock, CambioJuego, AlertaStock
 from .decorators import rol_requerido
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from supabase import create_client, Client
 from GestionInventario.settings import SUPABASE_URL, SUPABASE_KEY
+from django.views.decorators.http import require_POST
+
+
 
 # Inicializar el cliente de Supabase
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -657,12 +660,28 @@ def restar_stock(request, juego_id, stock_id):
             # TODO: Enviar alerta por correo: stock agotado (0 unidades)
             print("ALERTA: El stock total ha llegado a 0.")
             messages.warning(request, '⚠️ ALERTA: El stock total ha llegado a 0.')
+        
+        if stock_total < 5:
+            from .models import AlertaStock
+            alerta, creada = AlertaStock.objects.update_or_create(
+                juego=stock.juego,
+                defaults={'cantidad': stock_total}
+            )
+            print(f"⚠️ Alerta visual guardada: stock = {stock_total}")
+
 
         messages.success(request, f'Se ha restado una unidad del stock en {stock.ubicacion.nombreUbicacion}.')
     else:
         messages.warning(request, 'No se puede restar, ya que el stock ya está en 0.')
 
     return redirect('gestionar_stock', id=juego_id)
+
+@require_POST
+@login_required
+def eliminar_alerta_stock(request, juego_id):
+    AlertaStock.objects.filter(juego_id=juego_id).delete()
+    return JsonResponse({'ok': True})
+
 
 def obtener_stock_total_juego(juego_id):
     total = Stock.objects.filter(juego_id=juego_id).aggregate(Sum('cantidad'))['cantidad__sum']
