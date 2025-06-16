@@ -1,4 +1,5 @@
 import os
+import time
 from multiprocessing import context
 from pyexpat.errors import messages
 from re import search
@@ -11,7 +12,7 @@ from django.http import  JsonResponse
 from django.db.models import Q, Sum
 from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm
 from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion
-from .forms import  ModificarJuegoForm, ModificarRolUsuarioForm
+from .forms import  ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm
 from .decorators import rol_requerido
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -72,28 +73,28 @@ def gestion_usuarios(request):
 
 def modificar_usuario(request, id):
     usuario = get_object_or_404(User, id=id)
-    try:
-        personal = Personal.objects.get(usuario=usuario)
-    except Personal.DoesNotExist:
-        messages.error(request, "El usuario no tiene un perfil asociado.")
-        return redirect('gestion_usuarios')
+    personal = get_object_or_404(Personal, usuario=usuario)
 
     if request.method == 'POST':
-        form = PersonalForm(request.POST, instance=usuario)
+        form = ModificarPersonalForm(request.POST, instance=personal)
         if form.is_valid():
             form.save()
             messages.success(request, "Usuario modificado correctamente.")
             return redirect('gestion_usuarios')
     else:
-        form = PersonalForm(instance=personal)
+        form = ModificarPersonalForm(instance=personal)
 
-    return render(request, 'Registros/crear_personal.html', {'form': form, 'usuario': usuario})
+    return render(request, 'Registros/crear_personal.html', {
+        'form': form,
+        'usuario': usuario,
+        'personal': personal,
+        'is_editing': True
+    })
 
 def eliminar_usuario(request, id):
     usuario = get_object_or_404(User, id=id)
     try:
         personal = Personal.objects.get(usuario=usuario)
-        # Crear un diccionario con la información combinada
         datos_usuario = {
             'id': usuario.id,
             'username': usuario.username,
@@ -101,8 +102,8 @@ def eliminar_usuario(request, id):
             'nombre': personal.nombre,
             'telefono': personal.telefono,
             'rol': personal.rol,
-            'personal': personal,  # Agregamos el objeto personal completo
-            'usuario': usuario     # Agregamos el objeto usuario completo
+            'personal': personal,  
+            'usuario': usuario     
         }
     except Personal.DoesNotExist:
         messages.error(request, "El usuario no tiene un perfil asociado.")
@@ -115,7 +116,7 @@ def eliminar_usuario(request, id):
         return redirect('gestion_usuarios')
 
     return render(request, 'Editar/confirmar_eliminacion_usuario.html', {
-        'datos': datos_usuario  # Pasamos el diccionario con todos los datos
+        'datos': datos_usuario  
     })
 
 def modificar_rol(request, id):
@@ -465,25 +466,32 @@ def subir_imagen(request):
 #subir imagenes al bucket de supabase
 def upload_image_to_supabase(file_obj, file_name, bucket='img-juegos'):
     try:
+        # Genera un nombre único para evitar colisiones
+        unique_name = f"{int(time.time())}_{file_name}"
+        
         # Lee el archivo en memoria
         file_data = file_obj.read()
-        file_obj.seek(0)  # Regresa al inicio del archivo
+        file_obj.seek(0)
         
         # Sube el archivo a Supabase
         response = supabase.storage.from_(bucket).upload(
-            path=file_name,
+            path=unique_name,
             file=file_data,
             file_options={"content-type": file_obj.content_type}
         )
         
-        # Verifica si la respuesta es exitosa (no lanza excepción)
+        # Construye la URL pública correctamente
+        public_url = supabase.storage.from_(bucket).get_public_url(unique_name)
+        
+        print(f"URL generada: {public_url}")  # Para debugging
+        
         return {
             "success": True,
-            "path": supabase.storage.from_(bucket).get_public_url(file_name)
+            "path": public_url
         }
         
     except Exception as e:
-        print(f"Error al subir imagen: {str(e)}")
+        print(f"Error detallado al subir imagen: {str(e)}")
         return {
             "success": False,
             "error": str(e)
