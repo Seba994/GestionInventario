@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Personal, Rol , Ubicacion, Consola, Juego, Estado, Clasificacion, Descripcion, Distribucion
+from .models import Personal, Rol , Ubicacion, Consola, Juego, Estado, Clasificacion, Distribucion
 import logging
 class PersonalForm(UserCreationForm):
     
@@ -35,8 +35,8 @@ class PersonalForm(UserCreationForm):
 
 class ModificarRolUsuarioForm(forms.ModelForm):
     class Meta:
-        model = Personal  # Usamos Personal porque modificamos SU rol
-        fields = ['rol']  # Seleccionamos el campo rol que es un ForeignKey a Rol
+        model = Personal 
+        fields = ['rol']  
         labels = {
             'rol': 'Rol del Usuario',
         }
@@ -97,11 +97,13 @@ class ConsolaForm(forms.ModelForm):
         fields = ['nombreConsola', 'marcaConsola']
         labels = {
             'nombreConsola': 'Nombre de la Consola',
+
             'marcaConsola': 'Marca de la Consola'
         }
         widgets = {
             'nombreConsola': forms.TextInput(attrs={'class': 'form-control'}),
             'marcaConsola': forms.TextInput(attrs={'class': 'form-control'}),
+
         }
 
     def clean_nombreConsola(self):
@@ -110,98 +112,6 @@ class ConsolaForm(forms.ModelForm):
             raise forms.ValidationError("Ya existe una consola con este nombre.")
         return nombre
 
-#formulario para juegos, con validaciones
-#class JuegoForm(forms.ModelForm):
-    class Meta:
-        model = Juego
-        fields = ['codigoDeBarra', 'nombreJuego', 'consola', 'distribucion', 'clasificacion', 'descripcion', 'imagen']
-        labels = { "codigoDeBarra": "Código de Barra",
-                 "nombreJuego": "Nombre del Juego",
-                 "consola": "Consola",
-                 "distribucion": "Distribución",
-                 "clasificacion": "Clasificación",
-                 "descripcion": "Descripción",
-                 "imagen": "Imagen"}
-        widgets = {
-            'codigoDeBarra': forms.TextInput(attrs={'class': 'form-control'}),
-            'nombreJuego': forms.TextInput(attrs={'class': 'form-control'}),
-            'consola': forms.Select(attrs={'class': 'form-select'}),
-            'distribucion': forms.Select(attrs={'class': 'form-select'}),
-            'clasificacion': forms.Select(attrs={'class': 'form-select'}),
-            'descripcion': forms.Select(attrs={'class': 'form-select'}),
-            'imagen': forms.FileInput(attrs={'class': 'form-control'}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Configurar widgets y ordenamiento
-        self.fields['descripcion'].queryset = self.fields['descripcion'].queryset.order_by('detallesDescripcion')
-        
-        # Forzar los IDs para JavaScript
-        self.fields['distribucion'].widget.attrs.update({'id': 'id_distribucion'})
-        self.fields['clasificacion'].widget.attrs.update({'id': 'id_clasificacion'})
-        
-        # Agregar clases de Bootstrap
-        for field in self.fields.values():
-            field.widget.attrs['class'] = 'form-control'
-
-        # Filtrar clasificaciones según distribución
-        if 'distribucion' in self.data:
-            try:
-                distribucion_id = int(self.data.get('distribucion'))
-                self.fields['clasificacion'].queryset = Clasificacion.objects.filter(distribucion_id=distribucion_id)
-            except (ValueError, TypeError):
-                self.fields['clasificacion'].queryset = Clasificacion.objects.none()
-        else:
-            self.fields['clasificacion'].queryset = Clasificacion.objects.none()
-
-    def clean_codigoDeBarra(self):
-        codigo = self.cleaned_data.get('codigoDeBarra')
-        if not codigo:
-            return codigo
-            
-        if not codigo.isdigit():
-            raise forms.ValidationError("El código de barra debe contener solo números.")
-            
-        # Validar duplicados
-        existe_codigo = Juego.objects.filter(codigoDeBarra=codigo)
-        if self.instance.pk:
-            existe_codigo = existe_codigo.exclude(pk=self.instance.pk)
-        if existe_codigo.exists():
-            raise forms.ValidationError("Este código de barra ya está en uso.")
-            
-        return codigo
-
-    def clean(self):
-        cleaned_data = super().clean()
-        nombre = cleaned_data.get('nombreJuego')
-        consola = cleaned_data.get('consola')
-        distribucion = cleaned_data.get('distribucion')
-
-        # Validar combinación única
-        if nombre and consola and distribucion:
-            existe = Juego.objects.filter(
-                nombreJuego=nombre,
-                consola=consola,
-                distribucion=distribucion
-            )
-            if self.instance.pk:
-                existe = existe.exclude(pk=self.instance.pk)
-
-            if existe.exists():
-                raise forms.ValidationError(
-                    "Ya existe un juego con ese nombre, consola y distribución."
-                )
-
-        return cleaned_data
-
-    def save(self, commit=True):
-        juego = super().save(commit=False)
-        juego.estado = Estado.objects.get(nombreEstado='Activo')
-        if commit:
-            juego.save()
-        return juego
  
 logger = logging.getLogger(__name__)
 
