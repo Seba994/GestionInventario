@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Inventario Completo</title>
+    <style>
+        @page {
+            size: letter landscape;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .fecha {
+            text-align: right;
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .resumen {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+        .resumen-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 5px;
+            text-align: left;
+        }
+        th {
+            background-color: #f5f5f5;
+        }
+        .stock-warning {
+            color: #ff6b6b;
+        }
+        .stock-ok {
+            color: #51cf66;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Inventario Completo de Juegos</h1>
+    </div>
+    
+    <div class="fecha">
+        <p>Generado el: {{ fecha_generacion|date:"d/m/Y H:i" }}</p>
+    </div>
+
+    <div class="resumen">
+        <div class="resumen-title">Resumen General</div>
+        <p>Total de Juegos: {{ total_juegos }}</p>
+        <p>Total de Unidades en Stock: {{ total_unidades }}</p>
+        
+        <div class="resumen-title">Resumen por Consola</div>
+        {% for consola, datos in resumen_consolas.items %}
+        <p>{{ consola }}: {{ datos.juegos }} juegos ({{ datos.unidades }} unidades)</p>
+        {% endfor %}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Consola</th>
+                <th>Distribución</th>
+                <th>Clasificación</th>
+                <th>Estado</th>
+                <th>Stock Total</th>
+                <th>Ubicaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for juego in juegos %}
+            <tr>
+                <td>{{ juego.codigoDeBarra }}</td>
+                <td>{{ juego.nombreJuego }}</td>
+                <td>{{ juego.consola.nombreConsola }}</td>
+                <td>{{ juego.distribucion.siglaDistribucion }}</td>
+                <td>{{ juego.clasificacion.descripcionClasificacion }}</td>
+                <td>{{ juego.estado.nombreEstado }}</td>
+                <td class="{% if juego.stock_total == 0 %}stock-warning{% elif juego.stock_total > 5 %}stock-ok{% endif %}">
+                    {{ juego.stock_total }}
+                </td>
+                <td>
+                    {% for stock in juego.stock_set.all %}
+                        {% if stock.cantidad > 0 %}
+                            {{ stock.ubicacion.nombreUbicacion }}: {{ stock.cantidad }}<br>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

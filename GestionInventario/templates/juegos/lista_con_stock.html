@@ -30,7 +30,7 @@
 
         <!-- Tabla de resultados -->
         <table class="table table-striped">
-            <thead class="table-dark">
+            <thead >
                 <tr>
                     <th>Código</th>
                     <th>Nombre</th>
@@ -38,6 +38,7 @@
                     <th>Distribución</th>
                     <th>Clasificación</th>
                     <th>Descripción</th>
+                    <th>Estado</th>
                     <th>Stock</th>
                     <th>Acciones</th>
                 </tr>
@@ -51,6 +52,15 @@
                     <td>{{ juego.distribucion.siglaDistribucion }}</td>
                     <td>{{ juego.clasificacion.descripcionClasificacion }}</td>
                     <td>{{ juego.descripcion.detallesDescripcion }}</td>
+                    <td>
+                        {% if juego.estado.nombreEstado == 'Activo' %}
+                            <span class="badge bg-success">Activo</span>
+                        {% elif juego.estado.nombreEstado == 'Descontinuado' %}
+                            <span class="badge bg-danger">Descontinuado</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ juego.estado.nombreEstado }}</span>
+                        {% endif %}
+                    </td>
                     <td>{{ juego.stock_total }}</td>
                     <td class="text-nowrap">
                         <a href="{% url 'modificar_juego_id' juego.id %}" class="btn btn-sm btn-success" title="Editar">

@@ -63,6 +63,33 @@
                 </div>
             </div>
         </div>
+        <!-- Tarjeta de Reportes -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow">
+                <div class="card-header bg-warning text-white">
+                    <h3 class="card-title mb-0">Reportes</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <a href="{% url 'movimientos_stock' %}" class="text-decoration-none">
+                                <i class="fas fa-exchange-alt me-2"></i> Movimientos de Stock
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'cambios_juegos' %}" class="text-decoration-none">
+                                <i class="fas fa-history me-2"></i> Historial de Cambios
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'estadisticas_stock' %}" class="text-decoration-none">
+                                <i class="fas fa-chart-bar me-2"></i> Estadísticas de Stock
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
 
     <footer class="mt-5 pt-3 text-center text-muted">
@@ -70,4 +97,4 @@
     </footer>
 </div>
 {% endblock %}
-   
+
