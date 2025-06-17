@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Personal, Rol , Ubicacion, Consola, Juego, Estado, Clasificacion, Descripcion, Distribucion, Stock
+from .models import Personal, Rol , Ubicacion, Consola, Juego, Estado, Clasificacion, Descripcion, Distribucion, Stock, Devolucion
 import logging
 class PersonalForm(UserCreationForm):
     
@@ -317,3 +317,45 @@ class CambiarUbicacionForm(forms.Form):
             self.fields['nueva_ubicacion'].queryset = Ubicacion.objects.exclude(
                 idUbicacion__in=ubicaciones_con_stock
             )
+
+
+from django import forms
+from django.db.models import Q
+from .models import Devolucion, Juego, Ubicacion
+
+class DevolucionForm(forms.ModelForm):
+    class Meta:
+        model = Devolucion
+        fields = ['juego', 'cantidad', 'ubicacion_destino', 'motivo']
+        widgets = {
+            'motivo': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Ej: Producto defectuoso, cambio de ubicación...'}),
+            'juego': forms.Select(attrs={'class': 'select2'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Mostrar todos los juegos, ordenados por nombre
+        self.fields['juego'].queryset = Juego.objects.all().order_by('nombreJuego')
+        
+        # Mejorar la representación de los juegos en el select
+        self.fields['juego'].label_from_instance = lambda obj: (
+            f"{obj.nombreJuego} ({obj.consola.nombreConsola}) - "
+            f"{'Stock: ' + str(obj.stock_total) if obj.stock_total > 0 else 'Sin stock'}"
+        )
+        
+        # Agregar clases Bootstrap a los campos
+        for field in self.fields:
+            self.fields[field].widget.attrs.update({'class': 'form-control'})
+        
+        # Placeholder para cantidad
+        self.fields['cantidad'].widget.attrs['placeholder'] = 'Ej: 1, 2, 5...'
+        
+        # Ordenar ubicaciones por nombre
+        self.fields['ubicacion_destino'].queryset = Ubicacion.objects.all().order_by('nombreUbicacion')
+
+    def clean_cantidad(self):
+        cantidad = self.cleaned_data['cantidad']
+        if cantidad <= 0:
+            raise forms.ValidationError("La cantidad debe ser mayor a cero")
+        return cantidad
+        

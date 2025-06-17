@@ -182,3 +182,34 @@ class CambioJuego(models.Model):
     
     def __str__(self):
         return f"Cambio en {self.juego.nombreJuego} - {self.campo_modificado}"
+    
+class Devolucion(models.Model):
+    juego = models.ForeignKey('Juego', on_delete=models.CASCADE, verbose_name="Juego a devolver")
+    cantidad = models.PositiveIntegerField(verbose_name="Unidades a devolver")
+    ubicacion_destino = models.ForeignKey(
+        'Ubicacion', 
+        on_delete=models.CASCADE,
+        verbose_name="Ubicación destino"
+    )
+    motivo = models.TextField(
+        verbose_name="Motivo (opcional)",
+        blank=True,
+        null=True,
+        help_text="Razón de la devolución"
+    )
+    fecha = models.DateTimeField(auto_now_add=True)
+    usuario = models.ForeignKey(
+        'Personal',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Registrado por"
+    )
+
+    class Meta:
+        verbose_name = "Devolución"
+        verbose_name_plural = "Devoluciones"
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"Devolución de {self.juego.nombreJuego} ({self.cantidad} unidades)"

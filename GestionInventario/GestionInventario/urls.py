@@ -62,6 +62,8 @@ urlpatterns = [
     path('reportes/inventario/pdf/', views.generar_pdf_inventario, name='generar_pdf_inventario'),
     path('juegos/descontinuados/', views.listar_juegos_descontinuados, name='listar_juegos_descontinuados'),
     path('juego/reactivar/<int:pk>/', views.reactivar_juego, name='reactivar_juego'),
+    path('juegos/registrar_devolucion/', views.registrar_devolucion, name='registrar_devolucion'),
+    path('juegos/listar/', views.listar_devoluciones, name='listar_devoluciones'),
 
 
 ]

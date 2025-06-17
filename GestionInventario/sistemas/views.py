@@ -14,8 +14,8 @@ from django.http import  JsonResponse, HttpResponse
 from django.db.models import Q, Sum, Count, OuterRef, Subquery
 from django.db.models.functions import TruncDate
 from datetime import datetime, timedelta
-from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm
-from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion, MovimientoStock, CambioJuego
+from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm, DevolucionForm
+from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion, MovimientoStock, CambioJuego, Devolucion
 from .decorators import rol_requerido
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -990,4 +990,61 @@ def reactivar_juego(request, pk):
     
     return render(request, 'juegos/confirmar_reactivar.html', {
         'juego': juego
+    })
+    
+@login_required
+def listar_devoluciones(request):
+    devoluciones = Devolucion.objects.select_related(
+        'juego', 'ubicacion_destino', 'usuario'
+    ).order_by('-fecha')
+    
+    return render(request, 'juegos/listar_devoluciones.html', {
+        'devoluciones': devoluciones,
+        'titulo': 'Historial de Devoluciones'
+    })
+
+@login_required
+def registrar_devolucion(request):
+    if request.method == 'POST':
+        form = DevolucionForm(request.POST)
+        if form.is_valid():
+            devolucion = form.save(commit=False)
+            devolucion.usuario = request.user.personal
+            
+            try:
+                # Guardar la devolución
+                devolucion.save()
+                
+                # Registrar movimiento de stock
+                MovimientoStock.objects.create(
+                    juego=devolucion.juego,
+                    ubicacion=devolucion.ubicacion_destino,
+                    usuario=request.user.personal,
+                    tipo_movimiento='DEVOLUCION',
+                    cantidad=devolucion.cantidad,
+                    observacion=devolucion.motivo or "Devolución registrada"
+                )
+                
+                # Actualizar stock en la ubicación destino
+                stock, created = Stock.objects.get_or_create(
+                    juego=devolucion.juego,
+                    ubicacion=devolucion.ubicacion_destino
+                )
+                stock.cantidad += devolucion.cantidad
+                stock.save()
+                
+                messages.success(request, 
+                    f"Devolución registrada: {devolucion.juego.nombreJuego} "
+                    f"({devolucion.cantidad} unidades)"
+                )
+                return redirect('listar_devoluciones')
+                
+            except Exception as e:
+                messages.error(request, f"Error al registrar: {str(e)}")
+    else:
+        form = DevolucionForm()
+    
+    return render(request, 'juegos/registrar_devolucion.html', {
+        'form': form,
+        'titulo': 'Registrar Nueva Devolución'
     })
