@@ -136,12 +136,13 @@ class MovimientoStock(models.Model):
     TIPO_MOVIMIENTO = [
         ('ENTRADA', 'Entrada'),
         ('SALIDA', 'Salida'),
+        ('DEVOLUC', 'Devolución')
     ]
 
     juego = models.ForeignKey(Juego, on_delete=models.CASCADE)
     ubicacion = models.ForeignKey(Ubicacion, on_delete=models.CASCADE)
     usuario = models.ForeignKey(Personal, on_delete=models.CASCADE)
-    tipo_movimiento = models.CharField(max_length=7, choices=TIPO_MOVIMIENTO)
+    tipo_movimiento = models.CharField(max_length=10, choices=TIPO_MOVIMIENTO)
     cantidad = models.IntegerField()
     fecha = models.DateTimeField(default=timezone.now)
     observacion = models.TextField(blank=True, null=True)

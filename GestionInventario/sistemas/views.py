@@ -1016,15 +1016,34 @@ def reactivar_juego(request, pk):
     })
     
 @login_required
-def listar_devoluciones(request):
-    devoluciones = Devolucion.objects.select_related(
-        'juego', 'ubicacion_destino', 'usuario'
-    ).order_by('-fecha')
+@require_POST
+def eliminar_devolucion(request, id):
+    devolucion = get_object_or_404(Devolucion, id=id)
     
-    return render(request, 'juegos/listar_devoluciones.html', {
-        'devoluciones': devoluciones,
-        'titulo': 'Historial de Devoluciones'
-    })
+    try:
+        stock = Stock.objects.filter(
+            juego=devolucion.juego,
+            ubicacion=devolucion.ubicacion_destino
+        ).first()
+        
+        if stock:
+            stock.cantidad -= devolucion.cantidad
+            stock.save()
+        
+        MovimientoStock.objects.filter(
+            juego=devolucion.juego,
+            ubicacion=devolucion.ubicacion_destino,
+            cantidad=devolucion.cantidad,
+            tipo_movimiento='DEVOLUC'
+        ).delete()
+        
+        devolucion.delete()
+        
+        messages.success(request, 'Devolución eliminada correctamente.')
+    except Exception as e:
+        messages.error(request, f'Error al eliminar la devolución: {str(e)}')
+    
+    return redirect('listar_devoluciones')
 
 @login_required
 def registrar_devolucion(request):
@@ -1035,26 +1054,27 @@ def registrar_devolucion(request):
             devolucion.usuario = request.user.personal
             
             try:
-                # Guardar la devolución
+                # Guardar la devolución primero
                 devolucion.save()
                 
-                # Registrar movimiento de stock
+                # Actualizar el stock en la ubicación destino
+                stock, created = Stock.objects.get_or_create(
+                    juego=devolucion.juego,
+                    ubicacion=devolucion.ubicacion_destino,
+                    defaults={'cantidad': 0}
+                )
+                stock.cantidad += devolucion.cantidad
+                stock.save()
+                
+                # Registrar movimiento de stock (con tipo corregido)
                 MovimientoStock.objects.create(
                     juego=devolucion.juego,
                     ubicacion=devolucion.ubicacion_destino,
                     usuario=request.user.personal,
-                    tipo_movimiento='DEVOLUCION',
+                    tipo_movimiento='DEVOLUC',  # Usar el valor corregido
                     cantidad=devolucion.cantidad,
                     observacion=devolucion.motivo or "Devolución registrada"
                 )
-                
-                # Actualizar stock en la ubicación destino
-                stock, created = Stock.objects.get_or_create(
-                    juego=devolucion.juego,
-                    ubicacion=devolucion.ubicacion_destino
-                )
-                stock.cantidad += devolucion.cantidad
-                stock.save()
                 
                 messages.success(request, 
                     f"Devolución registrada: {devolucion.juego.nombreJuego} "
@@ -1070,4 +1090,45 @@ def registrar_devolucion(request):
     return render(request, 'juegos/registrar_devolucion.html', {
         'form': form,
         'titulo': 'Registrar Nueva Devolución'
+    })
+    
+@login_required
+@require_POST
+def eliminar_devolucion(request, id):
+    devolucion = get_object_or_404(Devolucion, id=id)
+    
+    try:
+        stock = Stock.objects.filter(
+            juego=devolucion.juego,
+            ubicacion=devolucion.ubicacion_destino
+        ).first()
+        
+        if stock:
+            stock.cantidad -= devolucion.cantidad
+            stock.save()
+        
+        MovimientoStock.objects.filter(
+            juego=devolucion.juego,
+            ubicacion=devolucion.ubicacion_destino,
+            cantidad=devolucion.cantidad,
+            tipo_movimiento='DEVOLUC'
+        ).delete()
+        # Eliminar la devolucion
+        devolucion.delete()
+        
+        messages.success(request, 'Devolución eliminada correctamente.')
+    except Exception as e:
+        messages.error(request, f'Error al eliminar la devolución: {str(e)}')
+    
+    return redirect('listar_devoluciones')
+
+@login_required
+def listar_devoluciones(request):
+    devoluciones = Devolucion.objects.select_related(
+        'juego', 'ubicacion_destino', 'usuario'
+    ).order_by('-fecha')
+    
+    return render(request, 'juegos/listar_devoluciones.html', {
+        'devoluciones': devoluciones,
+        'titulo': 'Historial de Devoluciones'
     })
