@@ -436,51 +436,58 @@ def listar_juegos_con_stock(request):
 def modificar_juego_id(request, id):
     juego = get_object_or_404(Juego, id=id)
 
-    # Copiar valores antiguos **ANTES** de modificar el objeto con el formulario
-    valores_antiguos = {
-        'nombreJuego': juego.nombreJuego,
-        'codigoDeBarra': juego.codigoDeBarra,
-        'consola': str(juego.consola),
-        'distribucion': str(juego.distribucion),
-        'clasificacion': str(juego.clasificacion),
-        'descripcion': str(juego.descripcion) if juego.descripcion else '',
-        'estado': str(juego.estado)
-    }
+    try:
+        valores_antiguos = {
+            'nombreJuego': juego.nombreJuego,
+            'codigoDeBarra': juego.codigoDeBarra,
+            'consola': str(juego.consola),
+            'distribucion': str(juego.distribucion),
+            'clasificacion': str(juego.clasificacion),
+            'descripcion': str(juego.descripcion) if juego.descripcion else '',
+            'estado': str(juego.estado)
+        }
+    except Exception as e:
+        print(f"Error al obtener valores antiguos: {e}")
 
-    if request.method == 'POST':
-        form = ModificarJuegoForm(request.POST, instance=juego)
-        if form.is_valid():
-            juego = form.save()
+    try:
+        if request.method == 'POST':
+            form = ModificarJuegoForm(request.POST, instance=juego)
+            if form.is_valid():
+                juego = form.save()
 
-            valores_nuevos = {
-                'nombreJuego': juego.nombreJuego,
-                'codigoDeBarra': juego.codigoDeBarra,
-                'consola': str(juego.consola),
-                'distribucion': str(juego.distribucion),
-                'clasificacion': str(juego.clasificacion),
-                'descripcion': str(juego.descripcion) if juego.descripcion else '',
-                'estado': str(juego.estado)
-            }
+                valores_nuevos = {
+                    'nombreJuego': juego.nombreJuego,
+                    'codigoDeBarra': juego.codigoDeBarra,
+                    'consola': str(juego.consola),
+                    'distribucion': str(juego.distribucion),
+                    'clasificacion': str(juego.clasificacion),
+                    'descripcion': str(juego.descripcion) if juego.descripcion else '',
+                    'estado': str(juego.estado)
+                }
 
-            for campo in valores_antiguos.keys():
-                if valores_antiguos[campo] != valores_nuevos[campo]:
-                    try:
-                        CambioJuego.objects.create(
-                            juego=juego,
-                            usuario=request.user.personal,
-                            campo_modificado=campo,
-                            valor_anterior=valores_antiguos[campo],
-                            valor_nuevo=valores_nuevos[campo]
-                        )
-                    except Exception as e:
-                        print(f"Error al guardar cambio: {e}")
+                for campo in valores_antiguos.keys():
+                    if valores_antiguos[campo] != valores_nuevos[campo]:
+                        try:
+                            CambioJuego.objects.create(
+                                juego=juego,
+                                usuario=request.user.personal,
+                                campo_modificado=campo,
+                                valor_anterior=valores_antiguos[campo],
+                                valor_nuevo=valores_nuevos[campo]
+                            )
+                        except Exception as e:
+                            print(f"Error al guardar cambio: {e}")
 
-            messages.success(request, '✅ Juego modificado correctamente.')
-            return redirect('listar_juegos_con_stock')
+                messages.success(request, '✅ Juego modificado correctamente.')
+                return redirect('listar_juegos_con_stock')
+            else:
+                print(f"[DEBUG] Errores del formulario: {form.errors}")
+                messages.error(request, '❌ Error al modificar el juego.')
         else:
-            messages.error(request, '❌ Error al modificar el juego.')
-    else:
-        form = ModificarJuegoForm(instance=juego)
+            form = ModificarJuegoForm(instance=juego)
+    except Exception as e:
+        print(f"Error al procesar la solicitud: {e}")
+        messages.error(request, '❌ Error al procesar la solicitud.')
 
     return render(request, 'juegos/modificar_juego.html', {
         'form': form,
@@ -525,6 +532,7 @@ def modificar_juego_codbarra(request, codigoDeBarra):
             messages.success(request, '✅ Juego modificado correctamente.')
             return redirect('listar_juegos_con_stock')
         else:
+            print(f"[DEBUG] Errores del formulario: {form.errors}")
             messages.error(request, '❌ Error al modificar el juego.')
     else:
         form = ModificarJuegoForm(instance=juego)

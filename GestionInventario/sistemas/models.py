@@ -118,6 +118,7 @@ class Juego(models.Model):
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
     imagen = models.CharField(max_length=500, blank=True, null=True)
     stock_al_descontinuar = models.IntegerField(
+        null=True,
         default=0,
         verbose_name="Stock al descontinuar",
         help_text="Cantidad de unidades que tenía cuando se descontinuó"
