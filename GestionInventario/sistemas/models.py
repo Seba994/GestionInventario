@@ -136,3 +136,12 @@ class CambioJuego(models.Model):
     
     def __str__(self):
         return f"Cambio en {self.juego.nombreJuego} - {self.campo_modificado}"
+    
+
+class AlertaStock(models.Model):
+    juego = models.OneToOneField(Juego, on_delete=models.CASCADE)
+    cantidad = models.PositiveIntegerField()
+    creada_en = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"⚠️ Stock bajo: {self.juego.nombreJuego} ({self.cantidad})"
