@@ -19,14 +19,14 @@ from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Dis
 from .decorators import rol_requerido
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from supabase import create_client, Client
-from GestionInventario.settings import SUPABASE_URL, SUPABASE_KEY
+#from supabase import create_client, Client
+#from GestionInventario.settings import SUPABASE_URL, SUPABASE_KEY
 from django.views.decorators.http import require_POST
 
 
 
 # Inicializar el cliente de Supabase
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+#supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def crear_personal(request):
     if request.method == 'POST':
@@ -231,29 +231,64 @@ def sanitize_filename(filename):
     return f"{timestamp}_{name}{ext.lower()}"
 
 # Vista para registrar juego
+#@login_required(login_url='login')
+#def registrar_juego(request):
+#    if request.method == 'POST':
+#        form = JuegoForm(request.POST, request.FILES)
+#        if form.is_valid():
+#            try:
+#                if 'imagen' in request.FILES:
+#                    imagen = request.FILES['imagen']
+#                    nombre_limpio = sanitize_filename(imagen.name)
+#                    resultado = upload_image_to_supabase(imagen, nombre_limpio)
+#                    
+#                    if resultado["success"]:
+#                        juego = form.save(commit=False)
+#                        juego.imagen = resultado["path"]
+#                        juego.save()
+#                        messages.success(request, '✅ Juego registrado exitosamente.')
+#                    else:
+#                        messages.error(request, f'❌ Error al subir la imagen: {resultado["error"]}')
+#                        return render(request, 'Registros/registrar_juego.html', {'form': form})
+#                else:
+#                    juego = form.save()
+#                    messages.success(request, '✅ Juego registrado exitosamente.')
+#                
+#                # Manejar la redirección según la acción
+#                accion = request.POST.get('action')
+#                if accion == 'guardar_otro':
+#                    return redirect('registrar_juego')
+#                elif accion == 'guardar_stock':
+#                    return redirect('gestionar_stock', id=juego.id)
+#                else:
+#                    return redirect('listar_juegos_con_stock')
+#                    
+#            except Exception as e:
+#                messages.error(request, f'❌ Error al guardar: {str(e)}')
+#                print(f"Error: {str(e)}")
+#                return render(request, 'Registros/registrar_juego.html', {'form': form})
+#        else:
+#            # Mostrar errores específicos del formulario
+#            for field in form:
+#                for error in field.errors:
+#                    messages.error(request, f'Error en {field.label}: {error}')
+#    else:
+#        form = JuegoForm()
+#
+#    return render(request, 'Registros/registrar_juego.html', {
+#        'form': form
+#    })
+#
+
 @login_required(login_url='login')
 def registrar_juego(request):
     if request.method == 'POST':
         form = JuegoForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                if 'imagen' in request.FILES:
-                    imagen = request.FILES['imagen']
-                    nombre_limpio = sanitize_filename(imagen.name)
-                    resultado = upload_image_to_supabase(imagen, nombre_limpio)
-                    
-                    if resultado["success"]:
-                        juego = form.save(commit=False)
-                        juego.imagen = resultado["path"]
-                        juego.save()
-                        messages.success(request, '✅ Juego registrado exitosamente.')
-                    else:
-                        messages.error(request, f'❌ Error al subir la imagen: {resultado["error"]}')
-                        return render(request, 'Registros/registrar_juego.html', {'form': form})
-                else:
-                    juego = form.save()
-                    messages.success(request, '✅ Juego registrado exitosamente.')
-                
+                juego = form.save()  # Esto ya guarda la imagen en MEDIA_ROOT automáticamente
+                messages.success(request, '✅ Juego registrado exitosamente.')
+
                 # Manejar la redirección según la acción
                 accion = request.POST.get('action')
                 if accion == 'guardar_otro':
@@ -262,13 +297,12 @@ def registrar_juego(request):
                     return redirect('gestionar_stock', id=juego.id)
                 else:
                     return redirect('listar_juegos_con_stock')
-                    
+
             except Exception as e:
                 messages.error(request, f'❌ Error al guardar: {str(e)}')
                 print(f"Error: {str(e)}")
                 return render(request, 'Registros/registrar_juego.html', {'form': form})
         else:
-            # Mostrar errores específicos del formulario
             for field in form:
                 for error in field.errors:
                     messages.error(request, f'Error en {field.label}: {error}')
@@ -279,7 +313,8 @@ def registrar_juego(request):
         'form': form
     })
 
-  # Vista para listar juegos
+
+# Vista para listar juegos
 def lista_juegos(request):
     juegos = Juego.objects.all()
     return render(request, 'juegos/lista_con_stock.html', {'juegos': juegos})
@@ -596,47 +631,47 @@ def agregar_stock(request, juego_id):
         'ubicaciones': ubicaciones
     })
 
-def subir_imagen(request):
-    if request.method == 'POST' and request.FILES['imagen']:
-        imagen = request.FILES['imagen']
-        nombre = f"{imagen.name}"
-        resultado = upload_image_to_supabase(imagen, nombre)
-        if resultado.get('error') is None:
-            return JsonResponse({"url": resultado.get('path')})
-        else:
-            return JsonResponse({"error": resultado['error']['message']})
+#def subir_imagen(request):
+#    if request.method == 'POST' and request.FILES['imagen']:
+#        imagen = request.FILES['imagen']
+#        nombre = f"{imagen.name}"
+#        resultado = upload_image_to_supabase(imagen, nombre)
+#        if resultado.get('error') is None:
+#            return JsonResponse({"url": resultado.get('path')})
+#        else:
+#            return JsonResponse({"error": resultado['error']['message']})
 
 #subir imagenes al bucket de supabase
-def upload_image_to_supabase(file_obj, file_name, bucket='img-juegos'):
-    try:
-       
-        # Lee el archivo en memoria
-        file_data = file_obj.read()
-        file_obj.seek(0)
-        
-        # Sube el archivo a Supabase
-        response = supabase.storage.from_(bucket).upload(
-            path=file_name,
-            file=file_data,
-            file_options={"content-type": file_obj.content_type}
-        )
-        
-        # Obtener la URL pública
-        public_url = supabase.storage.from_(bucket).get_public_url(file_name)
-        
-        print(f"URL generada: {public_url}")  # Para debugging
-        
-        return {
-            "success": True,
-            "path": public_url
-        }
-        
-    except Exception as e:
-        print(f"Error detallado al subir imagen: {str(e)}")
-        return {
-            "success": False,
-            "error": str(e)
-        }
+#def upload_image_to_supabase(file_obj, file_name, bucket='img-juegos'):
+#    try:
+#       
+#        # Lee el archivo en memoria
+#        file_data = file_obj.read()
+#        file_obj.seek(0)
+#        
+#        # Sube el archivo a Supabase
+#        response = supabase.storage.from_(bucket).upload(
+#            path=file_name,
+#            file=file_data,
+#            file_options={"content-type": file_obj.content_type}
+#        )
+#        
+#        # Obtener la URL pública
+#        public_url = supabase.storage.from_(bucket).get_public_url(file_name)
+#        
+#        print(f"URL generada: {public_url}")  # Para debugging
+#        
+#        return {
+#            "success": True,
+#            "path": public_url
+#        }
+#        
+#    except Exception as e:
+#        print(f"Error detallado al subir imagen: {str(e)}")
+#        return {
+#            "success": False,
+#            "error": str(e)
+#        }
 
 @login_required(login_url='login')
 def restar_stock(request, juego_id, stock_id):

@@ -116,7 +116,8 @@ class Juego(models.Model):
     clasificacion = models.ForeignKey(Clasificacion, on_delete=models.CASCADE)
     descripcion = models.ForeignKey(Descripcion, on_delete=models.SET_NULL, null=True, blank=True)
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
-    imagen = models.CharField(max_length=500, blank=True, null=True)
+    imagen = models.ImageField(upload_to='imagenes_juegos/', blank=True, null=True)
+
 
     @property
     def stock_total(self):

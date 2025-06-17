@@ -19,6 +19,8 @@ from django.urls import path
 from sistemas import views
 from django.contrib.auth import views as auth_views
 from django.views.generic import RedirectView
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -66,4 +68,4 @@ urlpatterns = [
     path('juegos/listar/', views.listar_devoluciones, name='listar_devoluciones'),
     path('eliminar_alerta_stock/<int:juego_id>/', views.eliminar_alerta_stock, name='eliminar_alerta_stock'),
     path('devoluciones/eliminar/<int:id>/', views.eliminar_devolucion, name='eliminar_devolucion'),
-]
+]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

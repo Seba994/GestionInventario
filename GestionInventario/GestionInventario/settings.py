@@ -81,29 +81,45 @@ WSGI_APPLICATION = 'GestionInventario.wsgi.application'
 
 from dotenv import load_dotenv
 
-
 #cargar variables de entorno
-load_dotenv()
+#load_dotenv()
+#
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.postgresql',
+#        'NAME': os.getenv('NAME'),
+#        'USER': os.getenv('USER'),
+#        'PASSWORD': os.getenv('PASSWORD'),
+#        'HOST': os.getenv('HOST'),
+#        'PORT': os.getenv('PORT', '5432'),
+#    }
+#}
+
+import pymysql
+pymysql.install_as_MySQLdb()
+
+from decouple import config
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('NAME'),
-        'USER': os.getenv('USER'),
-        'PASSWORD': os.getenv('PASSWORD'),
-        'HOST': os.getenv('HOST'),
-        'PORT': os.getenv('PORT', '5432'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST', default='localhost'),
+        'PORT': config('DB_PORT', default=3306, cast=int),
     }
 }
 
+
 #Gestión de imagenes
-from supabase import create_client
-import os
-
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY") 
-
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+#from supabase import create_client
+#import os
+#
+#SUPABASE_URL = os.environ.get("SUPABASE_URL")
+#SUPABASE_KEY = os.environ.get("SUPABASE_KEY") 
+#
+#supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 
