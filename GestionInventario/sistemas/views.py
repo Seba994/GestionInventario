@@ -419,6 +419,7 @@ def listar_juegos_con_stock(request):
         'stock': stock,
     }
 
+    juegos = juegos.filter(estado__nombreEstado='Activo')  
     paginator = Paginator(juegos.order_by('nombreJuego'), 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
