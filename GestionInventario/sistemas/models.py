@@ -77,9 +77,9 @@ class Descripcion(models.Model):
 
     def __str__(self):
         return str(self.detallesDescripcion)
-
+"""
 class Juego(models.Model):
-    """Modelo que define los juegos de video."""
+    #Modelo que define los juegos de video.
     codigoDeBarra = models.CharField(max_length=20, unique=True, null=True, blank=True)
     nombreJuego = models.CharField(max_length=250)
     consola = models.ForeignKey(Consola, on_delete=models.CASCADE)
@@ -91,14 +91,14 @@ class Juego(models.Model):
 
     @property
     def stock_total(self):
-        """Calcula el stock total de este juego en todas las ubicaciones."""
+        #Calcula el stock total de este juego en todas las ubicaciones.
         return Stock.objects.filter(juego=self).aggregate(
             total=models.Sum('cantidad'))['total'] or 0
     def __str__(self):
         return str(self.nombreJuego)
-
+"""
 class Stock(models.Model):
-    """Modelo que define el stock de juegos en ubicaciones."""
+    #Modelo que define el stock de juegos en ubicaciones
     idStock = models.AutoField(primary_key=True)
     juego = models.ForeignKey('Juego', on_delete=models.CASCADE, related_name='stocks')
     ubicacion = models.ForeignKey('Ubicacion', on_delete=models.CASCADE)
@@ -106,6 +106,52 @@ class Stock(models.Model):
 
     def __str__(self):
         return f"{self.juego.nombreJuego} - {self.ubicacion.nombreUbicacion}: {self.cantidad}"
+
+class Juego(models.Model):
+    """Modelo que define los juegos de video."""
+    codigoDeBarra = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    nombreJuego = models.CharField(max_length=250)
+    consola = models.ForeignKey(Consola, on_delete=models.CASCADE)
+    distribucion = models.ForeignKey(Distribucion, on_delete=models.CASCADE)
+    clasificacion = models.ForeignKey(Clasificacion, on_delete=models.CASCADE)
+    descripcion = models.ForeignKey(Descripcion, on_delete=models.SET_NULL, null=True, blank=True)
+    estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
+    imagen = models.CharField(max_length=500, blank=True, null=True)
+    stock_al_descontinuar = models.IntegerField(
+        default=0,
+        verbose_name="Stock al descontinuar",
+        help_text="Cantidad de unidades que tenía cuando se descontinuó"
+    )
+    fecha_descontinuado = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de descontinuación"
+    )
+
+    @property
+    def stock_total(self):
+        """Calcula el stock total de este juego en todas las ubicaciones."""
+        return Stock.objects.filter(juego=self).aggregate(
+            total=models.Sum('cantidad'))['total'] or 0
+    @property
+    def ultimo_cambio_estado(self):
+        """Obtiene el último cambio de estado registrado para este juego"""
+        return self.cambiojuego_set.filter(campo_modificado='estado').order_by('-fecha').first()
+
+    def save(self, *args, **kwargs):
+        """Método save personalizado para registrar el stock al descontinuar"""
+        # Verificar si el estado está cambiando a Descontinuado
+        if self.pk:  # Solo si el objeto ya existe
+            original = Juego.objects.get(pk=self.pk)
+            if (original.estado.nombreEstado != 'Descontinuado' and 
+                self.estado.nombreEstado == 'Descontinuado'):
+                self.stock_al_descontinuar = self.stock_total
+                self.fecha_descontinuado = timezone.now()
+        
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return str(self.nombreJuego)
 
 class MovimientoStock(models.Model):
     """Modelo para registrar movimientos de stock"""
@@ -136,7 +182,38 @@ class CambioJuego(models.Model):
     
     def __str__(self):
         return f"Cambio en {self.juego.nombreJuego} - {self.campo_modificado}"
-    
+
+class Devolucion(models.Model):
+    juego = models.ForeignKey('Juego', on_delete=models.CASCADE, verbose_name="Juego a devolver")
+    cantidad = models.PositiveIntegerField(verbose_name="Unidades a devolver")
+    ubicacion_destino = models.ForeignKey(
+        'Ubicacion', 
+        on_delete=models.CASCADE,
+        verbose_name="Ubicación destino"
+    )
+    motivo = models.TextField(
+        verbose_name="Motivo (opcional)",
+        blank=True,
+        null=True,
+        help_text="Razón de la devolución"
+    )
+    fecha = models.DateTimeField(auto_now_add=True)
+    usuario = models.ForeignKey(
+        'Personal',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Registrado por"
+    )
+
+    class Meta:
+        verbose_name = "Devolución"
+        verbose_name_plural = "Devoluciones"
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"Devolución de {self.juego.nombreJuego} ({self.cantidad} unidades)"
+
 
 class AlertaStock(models.Model):
     juego = models.OneToOneField(Juego, on_delete=models.CASCADE)
@@ -145,3 +222,4 @@ class AlertaStock(models.Model):
 
     def __str__(self):
         return f"⚠️ Stock bajo: {self.juego.nombreJuego} ({self.cantidad})"
+

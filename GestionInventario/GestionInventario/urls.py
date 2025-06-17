@@ -60,8 +60,9 @@ urlpatterns = [
     path('reportes/estadisticas/', views.estadisticas_stock, name='estadisticas_stock'),
     path('reportes/movimientos/pdf/', views.generar_pdf_movimientos, name='generar_pdf_movimientos'),
     path('reportes/inventario/pdf/', views.generar_pdf_inventario, name='generar_pdf_inventario'),
+    path('juegos/descontinuados/', views.listar_juegos_descontinuados, name='listar_juegos_descontinuados'),
+    path('juego/reactivar/<int:pk>/', views.reactivar_juego, name='reactivar_juego'),
+    path('juegos/registrar_devolucion/', views.registrar_devolucion, name='registrar_devolucion'),
+    path('juegos/listar/', views.listar_devoluciones, name='listar_devoluciones'),
     path('eliminar_alerta_stock/<int:juego_id>/', views.eliminar_alerta_stock, name='eliminar_alerta_stock'),
-
-
-
 ]

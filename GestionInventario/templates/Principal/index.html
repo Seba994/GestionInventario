@@ -27,10 +27,21 @@
                             <a href="{% url 'listar_juegos_con_stock' %}" class="text-decoration-none">
                                 <i class="fas fa-list me-2"></i> Ver todos los juegos
                             </a>
+                        <li class="list-group-item">
+                            <a href="{% url 'listar_juegos_descontinuados' %}" class="text-decoration-none">
+                                <i class="fas fa-ban me-2"></i> Juegos descontinuados
+                            </a>
+                        <li class="list-group-item">
+                            <a href="{% url 'listar_devoluciones' %}" class="text-decoration-none">
+                                <i class="fas fa-list me-2"></i> Ver todas las devoluciones
+                            </a>
+                        </li>
+                        
                     </ul>
                 </div>
             </div>
         </div>
+        
         <!-- Tarjeta de Administración -->
         <div class="col-md-4 mb-4">
             <div class="card h-100 shadow">

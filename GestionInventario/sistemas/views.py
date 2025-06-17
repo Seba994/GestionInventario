@@ -11,11 +11,11 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import  JsonResponse, HttpResponse
-from django.db.models import Q, Sum, Count
+from django.db.models import Q, Sum, Count, OuterRef, Subquery
 from django.db.models.functions import TruncDate
 from datetime import datetime, timedelta
-from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm
-from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion, MovimientoStock, CambioJuego, AlertaStock
+from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm, DevolucionForm
+from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion, MovimientoStock, CambioJuego, Devolucion, AlertaStock
 from .decorators import rol_requerido
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -955,3 +955,115 @@ def generar_pdf_inventario(request):
     
     return response
 
+@login_required
+def listar_juegos_descontinuados(request):
+    # Obtener el estado "Descontinuado"
+    estado_descontinuado = get_object_or_404(Estado, nombreEstado='Descontinuado')
+    
+    # Obtener juegos descontinuados con relaciones necesarias
+    juegos = Juego.objects.filter(
+        estado=estado_descontinuado
+    ).select_related(
+        'consola', 'distribucion'
+    ).order_by('nombreJuego')
+    
+    # Paginación
+    paginator = Paginator(juegos, 10)  # 10 juegos por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'juegos/lista_descontinuados.html', {
+        'page_obj': page_obj,
+        'titulo': 'Juegos Descontinuados'
+    })
+    
+@login_required
+@rol_requerido('dueño')  # solo rol dueño pueden reactivar
+def reactivar_juego(request, pk):
+    juego = get_object_or_404(Juego, pk=pk)
+    estado_activo = Estado.objects.get(nombreEstado='Activo')
+    
+    if request.method == 'POST':
+        # Registrar el cambio
+        CambioJuego.objects.create(
+            juego=juego,
+            usuario=request.user.personal,
+            campo_modificado='estado',
+            valor_anterior=juego.estado.nombreEstado,
+            valor_nuevo=estado_activo.nombreEstado
+        )
+        
+        # Restaurar el stock si estaba registrado
+        if juego.stock_al_descontinuar > 0:
+            # Aquí puedes implementar la lógica para restaurar el stock
+            # a las ubicaciones originales si lo necesitas
+            pass
+            
+        # Cambiar el estado
+        juego.estado = estado_activo
+        juego.stock_al_descontinuar = 0  # Resetear este valor
+        juego.save()
+        
+        messages.success(request, f'El juego {juego.nombreJuego} ha sido reactivado.')
+        return redirect('listar_juegos_descontinuados')
+    
+    return render(request, 'juegos/confirmar_reactivar.html', {
+        'juego': juego
+    })
+    
+@login_required
+def listar_devoluciones(request):
+    devoluciones = Devolucion.objects.select_related(
+        'juego', 'ubicacion_destino', 'usuario'
+    ).order_by('-fecha')
+    
+    return render(request, 'juegos/listar_devoluciones.html', {
+        'devoluciones': devoluciones,
+        'titulo': 'Historial de Devoluciones'
+    })
+
+@login_required
+def registrar_devolucion(request):
+    if request.method == 'POST':
+        form = DevolucionForm(request.POST)
+        if form.is_valid():
+            devolucion = form.save(commit=False)
+            devolucion.usuario = request.user.personal
+            
+            try:
+                # Guardar la devolución
+                devolucion.save()
+                
+                # Registrar movimiento de stock
+                MovimientoStock.objects.create(
+                    juego=devolucion.juego,
+                    ubicacion=devolucion.ubicacion_destino,
+                    usuario=request.user.personal,
+                    tipo_movimiento='DEVOLUCION',
+                    cantidad=devolucion.cantidad,
+                    observacion=devolucion.motivo or "Devolución registrada"
+                )
+                
+                # Actualizar stock en la ubicación destino
+                stock, created = Stock.objects.get_or_create(
+                    juego=devolucion.juego,
+                    ubicacion=devolucion.ubicacion_destino
+                )
+                stock.cantidad += devolucion.cantidad
+                stock.save()
+                
+                messages.success(request, 
+                    f"Devolución registrada: {devolucion.juego.nombreJuego} "
+                    f"({devolucion.cantidad} unidades)"
+                )
+                return redirect('listar_devoluciones')
+                
+            except Exception as e:
+                messages.error(request, f"Error al registrar: {str(e)}")
+    else:
+        form = DevolucionForm()
+    
+    return render(request, 'juegos/registrar_devolucion.html', {
+        'form': form,
+        'titulo': 'Registrar Nueva Devolución'
+    })
