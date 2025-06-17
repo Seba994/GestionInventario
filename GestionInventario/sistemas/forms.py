@@ -359,3 +359,17 @@ class DevolucionForm(forms.ModelForm):
             raise forms.ValidationError("La cantidad debe ser mayor a cero")
         return cantidad
         
+class ActualizarImagenForm(forms.ModelForm):
+    class Meta:
+        model = Juego
+        fields = ['imagen']
+        widgets = {
+            'imagen': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*'
+            })
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['imagen'].required = False

@@ -66,4 +66,5 @@ urlpatterns = [
     path('juegos/listar/', views.listar_devoluciones, name='listar_devoluciones'),
     path('eliminar_alerta_stock/<int:juego_id>/', views.eliminar_alerta_stock, name='eliminar_alerta_stock'),
     path('devoluciones/eliminar/<int:id>/', views.eliminar_devolucion, name='eliminar_devolucion'),
+    path('juego/<int:id>/actualizar-imagen/', views.actualizar_imagen_juego, name='actualizar_imagen_juego'),
 ]

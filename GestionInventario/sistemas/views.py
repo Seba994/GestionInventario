@@ -14,7 +14,7 @@ from django.http import  JsonResponse, HttpResponse
 from django.db.models import Q, Sum, Count, OuterRef, Subquery
 from django.db.models.functions import TruncDate
 from datetime import datetime, timedelta
-from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm, DevolucionForm
+from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm, DevolucionForm, ActualizarImagenForm
 from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion, MovimientoStock, CambioJuego, Devolucion, AlertaStock
 from .decorators import rol_requerido
 from rest_framework.decorators import api_view
@@ -1131,4 +1131,37 @@ def listar_devoluciones(request):
     return render(request, 'juegos/listar_devoluciones.html', {
         'devoluciones': devoluciones,
         'titulo': 'Historial de Devoluciones'
+    })
+    
+    
+@login_required
+def actualizar_imagen_juego(request, id):
+    juego = get_object_or_404(Juego, pk=id)
+    
+    if request.method == 'POST':
+        form = ActualizarImagenForm(request.POST, request.FILES, instance=juego)
+        if form.is_valid():
+            try:
+                if 'imagen' in request.FILES:
+                    imagen = request.FILES['imagen']
+                    nombre_limpio = sanitize_filename(imagen.name)
+                    resultado = upload_image_to_supabase(imagen, nombre_limpio)
+                    
+                    if resultado["success"]:
+                        juego.imagen = resultado["path"]
+                        juego.save()
+                        messages.success(request, '✅ Imagen actualizada exitosamente.')
+                        return redirect('gestionar_stock', pk=juego.id)
+                    else:
+                        messages.error(request, f'❌ Error al subir la imagen: {resultado["error"]}')
+                else:
+                    messages.warning(request, 'No se seleccionó ninguna imagen')
+            except Exception as e:
+                messages.error(request, f'❌ Error al actualizar: {str(e)}')
+    else:
+        form = ActualizarImagenForm(instance=juego)
+    
+    return render(request, 'registros/actualizar_imagen.html', {
+        'form': form,
+        'juego': juego
     })

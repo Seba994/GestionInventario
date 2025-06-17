@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-image"></i> {% if juego.imagen %}Cambiar{% else %}Agregar{% endif %} Imagen</h2>
+    <a href="{% url 'gestionar_stock' juego.id %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Volver
+    </a>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.imagen.label }}</label>
+                            {{ form.imagen }}
+                            <div class="form-text">Seleccione una nueva imagen para el producto</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Actualizar Imagen
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Imagen Actual</h5>
+                    {% if juego.imagen %}
+                        <img src="{{ juego.imagen }}" class="img-fluid rounded" style="max-height: 300px;" alt="Imagen actual">
+                        <p class="mt-2 text-muted">Previsualización</p>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Este producto no tiene imagen asignada
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
