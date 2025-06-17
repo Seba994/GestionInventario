@@ -117,17 +117,6 @@ class Juego(models.Model):
     descripcion = models.ForeignKey(Descripcion, on_delete=models.SET_NULL, null=True, blank=True)
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
     imagen = models.CharField(max_length=500, blank=True, null=True)
-    stock_al_descontinuar = models.IntegerField(
-        null=True,
-        default=0,
-        verbose_name="Stock al descontinuar",
-        help_text="Cantidad de unidades que tenía cuando se descontinuó"
-    )
-    fecha_descontinuado = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name="Fecha de descontinuación"
-    )
 
     @property
     def stock_total(self):
@@ -138,18 +127,6 @@ class Juego(models.Model):
     def ultimo_cambio_estado(self):
         """Obtiene el último cambio de estado registrado para este juego"""
         return self.cambiojuego_set.filter(campo_modificado='estado').order_by('-fecha').first()
-
-    def save(self, *args, **kwargs):
-        """Método save personalizado para registrar el stock al descontinuar"""
-        # Verificar si el estado está cambiando a Descontinuado
-        if self.pk:  # Solo si el objeto ya existe
-            original = Juego.objects.get(pk=self.pk)
-            if (original.estado.nombreEstado != 'Descontinuado' and 
-                self.estado.nombreEstado == 'Descontinuado'):
-                self.stock_al_descontinuar = self.stock_total
-                self.fecha_descontinuado = timezone.now()
-        
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return str(self.nombreJuego)

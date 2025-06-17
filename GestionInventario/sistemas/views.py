@@ -1002,15 +1002,10 @@ def reactivar_juego(request, pk):
             valor_nuevo=estado_activo.nombreEstado
         )
         
-        # Restaurar el stock si estaba registrado
-        if juego.stock_al_descontinuar > 0:
-            # Aquí puedes implementar la lógica para restaurar el stock
-            # a las ubicaciones originales si lo necesitas
-            pass
+        
             
         # Cambiar el estado
         juego.estado = estado_activo
-        juego.stock_al_descontinuar = 0  # Resetear este valor
         juego.save()
         
         messages.success(request, f'El juego {juego.nombreJuego} ha sido reactivado.')

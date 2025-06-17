@@ -12,12 +12,7 @@
             <div class="mb-3">
                 <strong>Juego:</strong> {{ juego.nombreJuego }}<br>
                 <strong>Consola:</strong> {{ juego.consola.nombreConsola }}<br>
-                <strong>Stock al descontinuar:</strong> 
-                {% if juego.stock_al_descontinuar %}
-                    {{ juego.stock_al_descontinuar }}
-                {% else %}
-                    {{ juego.stock_total }}
-                {% endif %}
+                
             </div>
             
             <form method="post">

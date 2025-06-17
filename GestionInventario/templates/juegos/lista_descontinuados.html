@@ -19,7 +19,6 @@
                             <th>Nombre</th>
                             <th>Consola</th>
                             <th>Distribución</th>
-                            <th>Stock al descontinuar</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -29,13 +28,7 @@
                             <td>{{ juego.nombreJuego }}</td>
                             <td>{{ juego.consola.nombreConsola }}</td>
                             <td>{{ juego.distribucion.localidadDistribucion }}</td>
-                            <td>
-                                {% if juego.stock_al_descontinuar %}
-                                    {{ juego.stock_al_descontinuar }}
-                                {% else %}
-                                    {{ juego.stock_total }}
-                                {% endif %}
-                            </td>
+                            
                             <td>
                                 <a href="{% url 'reactivar_juego' juego.id %}" class="btn btn-sm btn-success" title="Reactivar">
                                  Reactivar
