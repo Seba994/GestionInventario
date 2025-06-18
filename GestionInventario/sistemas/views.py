@@ -1151,7 +1151,7 @@ def actualizar_imagen_juego(request, id):
                         juego.imagen = resultado["path"]
                         juego.save()
                         messages.success(request, '✅ Imagen actualizada exitosamente.')
-                        return redirect('gestionar_stock', pk=juego.id)
+                        return redirect('gestionar_stock', id=juego.id)
                     else:
                         messages.error(request, f'❌ Error al subir la imagen: {resultado["error"]}')
                 else:

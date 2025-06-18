@@ -6,9 +6,6 @@
         <div class="d-flex justify-content-end mb-4">
         <a href="{% url 'listar_juegos_con_stock' %}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Volver
-        <a href="{% url 'actualizar_imagen_juego' juego.id %}" class="btn {% if juego.imagen %}btn-warning{% else %}btn-success{% endif %}">
-            <i class="fas fa-camera"></i> 
-            {% if juego.imagen %}Cambiar imagen{% else %}Agregar imagen{% endif %}
         </a>
         </div>
         <hr>
