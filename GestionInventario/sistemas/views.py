@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.http import  JsonResponse, HttpResponse
 from django.db.models import Q, Sum
 from django.db.models.functions import TruncDate
+from django.db import DatabaseError
 from django.template.loader import get_template
 from django.views.decorators.http import require_POST
 from supabase import create_client, Client
@@ -229,7 +230,7 @@ def registrar_juego(request):
                     return redirect('gestionar_stock', id=juego.id)
                 else:
                     return redirect('listar_juegos_con_stock')
-            except Exception as e:
+            except ValueError as e:
                 messages.error(request, f'❌ Error al guardar: {str(e)}')
                 print(f"Error: {str(e)}")
                 return render(request, 'Registros/registrar_juego.html', {'form': form})
@@ -296,8 +297,6 @@ def eliminar_juego(request, pk):
                              f'✅ Juego marcado como {estado_inactivo.nombreEstado} correctamente')
         except Estado.DoesNotExist:
             messages.error(request, '❌ Error: No existe el estado Inactivo en el sistema')
-        except Exception as e:
-            messages.error(request, f'❌ Error al cambiar estado del juego: {str(e)}')
         return redirect('listar_juegos_con_stock')
     return render(request, 'Editar/confirmar_eliminacion.html', {'juego': juego})
 
@@ -407,7 +406,7 @@ def modificar_juego_id(request, id):
             'descripcion': str(juego.descripcion) if juego.descripcion else '',
             'estado': str(juego.estado)
         }
-    except Exception as e:
+    except Juego.DoesNotExist as e:
         print(f"Error al obtener valores antiguos: {e}")
     try:
         if request.method == 'POST':
@@ -435,7 +434,7 @@ def modificar_juego_id(request, id):
                                 valor_anterior=valores_antiguos[campo],
                                 valor_nuevo=valores_nuevos[campo]
                             )
-                        except Exception as e:
+                        except ValueError as e:
                             print(f"Error al guardar cambio: {e}")
 
                 messages.success(request, '✅ Juego modificado correctamente.')
@@ -445,7 +444,7 @@ def modificar_juego_id(request, id):
                 messages.error(request, '❌ Error al modificar el juego.')
         else:
             form = ModificarJuegoForm(instance=juego)
-    except Exception as e:
+    except ValueError as e:
         print(f"Error al procesar la solicitud: {e}")
         messages.error(request, '❌ Error al procesar la solicitud.')
 
@@ -588,7 +587,6 @@ def restar_stock(request, juego_id, stock_id):
             print("ALERTA: El stock total ha llegado a 0.")
             messages.warning(request, '⚠️ ALERTA: El stock total ha llegado a 0.')
         if stock_total < 5:
-            from .models import AlertaStock
             alerta, creada = AlertaStock.objects.update_or_create(
                 juego=stock.juego,
                 defaults={'cantidad': stock_total}
@@ -676,7 +674,7 @@ def cambiar_ubicacion_juego(request, juego_id):
                 messages.success(request,
                         f'Se movieron {cantidad} unidades a {ubicacion_destino.nombreUbicacion}')
                 return redirect('gestionar_stock', id=juego.id)
-            except Exception as e:
+            except DatabaseError as e:
                 messages.error(request, f'Error al mover el stock: {str(e)}')
     else:
         form = CambiarUbicacionForm(juego=juego)
@@ -938,7 +936,7 @@ def registrar_devolucion(request):
                 )
                 return redirect('listar_devoluciones')
 
-            except Exception as e:
+            except DatabaseError as e:
                 messages.error(request, f"Error al registrar: {str(e)}")
     else:
         form = DevolucionForm()
@@ -970,7 +968,7 @@ def eliminar_devolucion(request, id):
         # Eliminar la devolucion
         devolucion.delete()
         messages.success(request, 'Devolución eliminada correctamente.')
-    except Exception as e:
+    except DatabaseError as e:
         messages.error(request, f'Error al eliminar la devolución: {str(e)}')
     return redirect('listar_devoluciones')
 
