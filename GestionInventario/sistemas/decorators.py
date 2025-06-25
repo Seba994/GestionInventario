@@ -1,9 +1,11 @@
+"""decorators"""
+from functools import wraps
 from django.shortcuts import redirect
 from django.contrib import messages
-from functools import wraps
 from .models import Personal
 
 def rol_requerido(rol_nombre):
+    """Decorator  para verificar el rol del usuario."""
     def decorator(view_func):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
