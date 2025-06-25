@@ -25,6 +25,7 @@ from .utils import upload_image_to_supabase
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def crear_personal(request):
+    """Vista para crear un nuevo usuario del sistema."""
     if request.method == 'POST':
         form = PersonalForm(request.POST)
         if form.is_valid():
@@ -38,6 +39,7 @@ def crear_personal(request):
                   {'form': form})
 
 def crear_rol(request):
+    """Vista para crear un nuevo rol en el sistema."""
     if request.method == 'POST':
         form = RolForm(request.POST)
         if form.is_valid():
@@ -69,6 +71,7 @@ def gestion_usuarios(request):
     })
 
 def modificar_usuario(request, id):
+    """Vista para modificar un usuario existente."""
     usuario = get_object_or_404(User, id=id)
     personal = get_object_or_404(Personal, usuario=usuario)
 
@@ -89,6 +92,7 @@ def modificar_usuario(request, id):
     })
 
 def eliminar_usuario(request, id):
+    """Vista para eliminar un usuario del sistema."""
     usuario = get_object_or_404(User, id=id)
     try:
         personal = Personal.objects.get(usuario=usuario)
@@ -117,6 +121,7 @@ def eliminar_usuario(request, id):
     })
 
 def modificar_rol(request, id):
+    """Vista para modificar el rol de un usuario."""
     # Obtener el personal directamente
     personal = get_object_or_404(Personal, usuario_id=id)
     if request.method == 'POST':
@@ -137,6 +142,7 @@ def modificar_rol(request, id):
     })
 
 def registrar_consola(request):
+    """Vista para registrar una nueva consola en el sistema."""
     if request.method == 'POST':
         form = ConsolaForm(request.POST)
         if form.is_valid():
@@ -148,10 +154,12 @@ def registrar_consola(request):
     return render(request, 'Registros/registrar_consolas.html', {'form': form})
 
 def lista_consolas(request):
+    """Vista para listar todas las consolas registradas."""
     consolas = Consola.objects.all()
     return render(request, 'consolas/lista.html', {'consolas': consolas})
 
 def registrar_ubicacion(request):
+    """Vista para registrar una nueva ubicación en el sistema."""
     if request.method == 'POST':
         form = UbicacionForm(request.POST)
         if form.is_valid():
@@ -162,6 +170,7 @@ def registrar_ubicacion(request):
     return render(request, 'Registros/registrar_ubicaciones.html', {'form': form})
 
 def agregar_varias_ubicaciones(request):
+    """Vista para agregar varias ubicaciones a la base de datos."""
     if request.method == 'POST':
         nombres = request.POST.getlist('nombreUbicacion[]')
         descripciones = request.POST.getlist('descripcionUbicacion[]')
@@ -177,6 +186,7 @@ def agregar_varias_ubicaciones(request):
     return render(request, 'ubicaciones/agregar_varias_ubicaciones.html')
 
 def lista_ubicaciones(request):
+    """Vista para listar todas las ubicaciones registradas."""
     termino_busqueda = request.GET.get('search', '')
     ubicaciones = buscar_ubicaciones(termino_busqueda)
     paginator = Paginator(ubicaciones, 10)
@@ -191,6 +201,7 @@ def lista_ubicaciones(request):
 
 @login_required(login_url='login')
 def registrar_juego(request):
+    """Vista para registrar un nuevo juego en el sistema."""
     if request.method == 'POST':
         form = JuegoForm(request.POST, request.FILES)
         if form.is_valid():
@@ -234,20 +245,24 @@ def registrar_juego(request):
     })
 
 def lista_juegos(request):
+    """Vista para listar todos los juegos registrados."""
     juegos = Juego.objects.all()
     return render(request, 'juegos/lista_con_stock.html', {'juegos': juegos})
 
 @login_required(login_url='login')
 def principal(request):
+    """Vista principal del sistema."""
     return render(request, 'principal/index.html')
 
 def detalle_juego(request, pk):
+    """Vista para mostrar los detalles de un juego específico."""
     juego = get_object_or_404(Juego.objects.select_related(
         'consola', 'distribucion', 'clasificacion', 'estado'
     ), pk=pk)
     return render(request, 'Editar/detalle_juego.html', {'juego': juego})
 
 def eliminar_juego(request, pk):
+    """Vista para eliminar un juego marcándolo como inactivo."""
     juego = get_object_or_404(Juego, pk=pk)
     if request.method == 'POST':
         try:
@@ -289,11 +304,13 @@ def eliminar_juego(request, pk):
     return render(request, 'Editar/confirmar_eliminacion.html', {'juego': juego})
 
 def buscar_juego(request):
+    """Vista para buscar juegos por nombre."""
     search = request.GET.get('search', '')
     juegos = Juego.objects.filter(nombreJuego__icontains=search)
     return render(request, 'juegos/buscar.html', {'juegos': juegos})
 
 def buscar_juego_ubicacion(request):
+    """Vista para buscar juegos por ubicación."""
     ubicacion = request.GET.get('ubicacion', '')
     juegos = []
     if ubicacion:
@@ -308,17 +325,20 @@ def buscar_juego_ubicacion(request):
     return render(request, 'juegos/buscar_ubicacion.html', context)
 
 def buscar_juego_consola(request):
+    """Vista para buscar juegos por consola."""
     consola = request.GET.get('consola', '')
     juegos = Juego.objects.filter(consola__nombreConsola__icontains=consola)
     return render(request, 'juegos/buscar_consola.html', {'juegos': juegos})
 
 def buscar_juego_rol(request):
+    """Vista para buscar juegos por rol."""
     rol = request.GET.get('rol', '')
     juegos = Juego.objects.filter(rol__nombreRol__icontains=rol)
     return render(request, 'juegos/buscar_rol.html', {'juegos': juegos})
 
 @login_required(login_url='login')
 def listar_juegos_con_stock(request):
+    """Vista para listar juegos con stock y aplicar filtros."""
     # Obtén los filtros y normaliza a string para evitar None
     search = request.GET.get('search', '').strip()
     consola = request.GET.get('consola', '')
@@ -376,6 +396,7 @@ def listar_juegos_con_stock(request):
     })
 
 def modificar_juego_id(request, id):
+    """Vista para modificar un juego por su ID"""
     juego = get_object_or_404(Juego, id=id)
     try:
         valores_antiguos = {
@@ -435,6 +456,7 @@ def modificar_juego_id(request, id):
     })
 
 def modificar_juego_codbarra(request, codigoDeBarra):
+    """Vista para modificar un juego por su código de barra"""
     juego = get_object_or_404(Juego, codigoDeBarra=codigoDeBarra)
     if request.method == 'POST':
         form = ModificarJuegoForm(request.POST, instance=juego)
@@ -478,12 +500,14 @@ def modificar_juego_codbarra(request, codigoDeBarra):
     })
 
 def obtener_clasificaciones(request):
+    """Vista para obtener las clasificaciones de un juego específico"""
     distribucion_id = request.GET.get('distribucion_id')
     clasificaciones = Clasificacion.objects.filter(distribucion_id=distribucion_id).values('idClasificacion', 'descripcionClasificacion')
     return JsonResponse(list(clasificaciones), safe=False)
 
 @login_required(login_url='login')
 def gestionar_stock(request, id):
+    """Vista para gestionar el stock de un juego específico"""
     juego = get_object_or_404(Juego, pk=id)
     stocks = Stock.objects.filter(juego=juego)
 
@@ -494,6 +518,7 @@ def gestionar_stock(request, id):
 
 @login_required(login_url='login')
 def agregar_stock(request, juego_id):
+    """Vista para agregar stock manualmente a un juego específico"""
     juego = get_object_or_404(Juego, id=juego_id)
     ubicaciones = Ubicacion.objects.all()
 
@@ -533,6 +558,7 @@ def agregar_stock(request, juego_id):
 
 @login_required(login_url='login')
 def restar_stock(request, juego_id, stock_id):
+    """Vista para restar stock de un juego específico"""
     stock = get_object_or_404(Stock, idStock=stock_id, juego__id=juego_id)
 
     if stock.cantidad > 0:
@@ -581,10 +607,12 @@ def restar_stock(request, juego_id, stock_id):
 @require_POST
 @login_required
 def eliminar_alerta_stock(request, juego_id):
+    """Vista para eliminar una alerta de stock de un juego específico"""
     AlertaStock.objects.filter(juego_id=juego_id).delete()
     return JsonResponse({'ok': True})
 
 def editar_ubicacion(request, id):
+    """Vista para editar una ubicación del inventario"""
     ubicacion = get_object_or_404(Ubicacion, idUbicacion=id)
 
     if request.method == 'POST':
@@ -602,6 +630,7 @@ def editar_ubicacion(request, id):
     })
 
 def eliminar_ubicacion(request, id):
+    """Vista para eliminar una ubicación del inventario"""
     ubicacion = get_object_or_404(Ubicacion, pk=id)
     
     # Obtener todos los registros de stock de esta ubicación
@@ -622,6 +651,7 @@ def eliminar_ubicacion(request, id):
 
 @login_required(login_url='login')
 def cambiar_ubicacion_juego(request, juego_id):
+    """Vista para cambiar la ubicación de un juego en el inventario"""
     juego = get_object_or_404(Juego, pk=juego_id)
     stocks_actuales = Stock.objects.filter(juego=juego)
     if request.method == 'POST':
