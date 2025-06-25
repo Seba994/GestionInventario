@@ -79,6 +79,7 @@ class Descripcion(models.Model):
         return str(self.detallesDescripcion)
 
 class Stock(models.Model):
+    """Modelo que define el stock de juegos en ubicaciones."""
     #Modelo que define el stock de juegos en ubicaciones
     idStock = models.AutoField(primary_key=True)
     juego = models.ForeignKey('Juego', on_delete=models.CASCADE, related_name='stocks')
@@ -144,6 +145,7 @@ class CambioJuego(models.Model):
         return f"Cambio en {self.juego.nombreJuego} - {self.campo_modificado}"
 
 class Devolucion(models.Model):
+    """Modelo para registrar devoluciones de juegos."""
     juego = models.ForeignKey('Juego', on_delete=models.CASCADE, verbose_name="Juego a devolver")
     cantidad = models.PositiveIntegerField(verbose_name="Unidades a devolver")
     ubicacion_destino = models.ForeignKey(
@@ -174,8 +176,8 @@ class Devolucion(models.Model):
     def __str__(self):
         return f"Devolución de {self.juego.nombreJuego} ({self.cantidad} unidades)"
 
-
 class AlertaStock(models.Model):
+    """Modelo para alertar sobre stock bajo de un juego."""
     juego = models.OneToOneField(Juego, on_delete=models.CASCADE)
     cantidad = models.PositiveIntegerField()
     creada_en = models.DateTimeField(auto_now_add=True)
