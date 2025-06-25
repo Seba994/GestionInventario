@@ -77,26 +77,7 @@ class Descripcion(models.Model):
 
     def __str__(self):
         return str(self.detallesDescripcion)
-"""
-class Juego(models.Model):
-    #Modelo que define los juegos de video.
-    codigoDeBarra = models.CharField(max_length=20, unique=True, null=True, blank=True)
-    nombreJuego = models.CharField(max_length=250)
-    consola = models.ForeignKey(Consola, on_delete=models.CASCADE)
-    distribucion = models.ForeignKey(Distribucion, on_delete=models.CASCADE)
-    clasificacion = models.ForeignKey(Clasificacion, on_delete=models.CASCADE)
-    descripcion = models.ForeignKey(Descripcion, on_delete=models.SET_NULL, null=True, blank=True)
-    estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
-    imagen = models.CharField(max_length=500, blank=True, null=True)
 
-    @property
-    def stock_total(self):
-        #Calcula el stock total de este juego en todas las ubicaciones.
-        return Stock.objects.filter(juego=self).aggregate(
-            total=models.Sum('cantidad'))['total'] or 0
-    def __str__(self):
-        return str(self.nombreJuego)
-"""
 class Stock(models.Model):
     #Modelo que define el stock de juegos en ubicaciones
     idStock = models.AutoField(primary_key=True)
