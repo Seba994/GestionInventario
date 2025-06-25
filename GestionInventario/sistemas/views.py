@@ -424,15 +424,16 @@ def modificar_juego_id(request, juego_id):
                     'estado': str(juego.estado)
                 }
 
-                for campo in valores_antiguos.keys():
-                    if valores_antiguos[campo] != valores_nuevos[campo]:
+                for campo, valor_anterior in valores_antiguos.items():
+                    valor_nuevo = valores_nuevos[campo]
+                    if valor_anterior != valor_nuevo:
                         try:
                             CambioJuego.objects.create(
                                 juego=juego,
                                 usuario=request.user.personal,
                                 campo_modificado=campo,
-                                valor_anterior=valores_antiguos[campo],
-                                valor_nuevo=valores_nuevos[campo]
+                                valor_anterior=valor_anterior,
+                                valor_nuevo=valor_nuevo
                             )
                         except ValueError as e:
                             print(f"Error al guardar cambio: {e}")
