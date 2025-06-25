@@ -1,6 +1,3 @@
-import os
-import re
-import time
 from multiprocessing import context
 from pyexpat.errors import messages
 from re import search
@@ -13,6 +10,7 @@ from django.contrib import messages
 from django.http import  JsonResponse, HttpResponse
 from django.db.models import Q, Sum, Count, OuterRef, Subquery
 from django.db.models.functions import TruncDate
+from django.template.loader import get_template
 from datetime import datetime, timedelta
 from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm, DevolucionForm
 from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion, MovimientoStock, CambioJuego, Devolucion, AlertaStock
@@ -22,8 +20,8 @@ from rest_framework.response import Response
 from supabase import create_client, Client
 from GestionInventario.settings import SUPABASE_URL, SUPABASE_KEY
 from django.views.decorators.http import require_POST
-
-
+from sistemas.utils import buscar_ubicaciones, sanitize_filename, obtener_stock_total_juego
+from xhtml2pdf import pisa
 
 # Inicializar el cliente de Supabase
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -190,11 +188,6 @@ def agregar_varias_ubicaciones(request):
 
     return render(request, 'ubicaciones/agregar_varias_ubicaciones.html')
 
-def buscar_ubicaciones(termino):
-    if termino:
-        return Ubicacion.objects.filter(nombreUbicacion__icontains=termino)
-    return Ubicacion.objects.all()
-
 # Vista para listar ubicaciones
 def lista_ubicaciones(request):
     termino_busqueda = request.GET.get('search', '')
@@ -210,25 +203,6 @@ def lista_ubicaciones(request):
         'search_term': termino_busqueda,
     }
     return render(request, 'ubicaciones/lista_ubicacion.html', context)
-
-def sanitize_filename(filename):
-    """Limpia el nombre del archivo de caracteres especiales y espacios"""
-    # Obtener nombre y extensión
-    name, ext = os.path.splitext(filename)
-    
-    # Convertir a minúsculas y reemplazar caracteres no deseados
-    name = name.lower()
-    # Reemplazar espacios y caracteres especiales con guión bajo
-    name = re.sub(r'[\s]+', '_', name)  # Primero reemplazar espacios
-    name = re.sub(r'[^a-z0-9_]', '_', name)  # Luego otros caracteres especiales
-    # Eliminar guiones bajos múltiples
-    name = re.sub(r'_+', '_', name)
-    # Eliminar guiones al inicio y final
-    name = name.strip('_')
-    
-    # Generar nombre único para evitar colisiones
-    timestamp = str(int(time.time()))
-    return f"{timestamp}_{name}{ext.lower()}"
 
 # Vista para registrar juego
 @login_required(login_url='login')
@@ -280,6 +254,7 @@ def registrar_juego(request):
     })
 
   # Vista para listar juegos
+
 def lista_juegos(request):
     juegos = Juego.objects.all()
     return render(request, 'juegos/lista_con_stock.html', {'juegos': juegos})
@@ -287,6 +262,7 @@ def lista_juegos(request):
 @login_required(login_url='login')
 def principal(request):
     return render(request, 'principal/index.html')
+
 
 def detalle_juego(request, pk):
     juego = get_object_or_404(Juego.objects.select_related(
@@ -365,7 +341,6 @@ def buscar_juego_consola(request):
     consola = request.GET.get('consola', '')
     juegos = Juego.objects.filter(consola__nombreConsola__icontains=consola)
     return render(request, 'juegos/buscar_consola.html', {'juegos': juegos})
-
 
 def buscar_juego_rol(request):
     rol = request.GET.get('rol', '')
@@ -596,48 +571,6 @@ def agregar_stock(request, juego_id):
         'ubicaciones': ubicaciones
     })
 
-def subir_imagen(request):
-    if request.method == 'POST' and request.FILES['imagen']:
-        imagen = request.FILES['imagen']
-        nombre = f"{imagen.name}"
-        resultado = upload_image_to_supabase(imagen, nombre)
-        if resultado.get('error') is None:
-            return JsonResponse({"url": resultado.get('path')})
-        else:
-            return JsonResponse({"error": resultado['error']['message']})
-
-#subir imagenes al bucket de supabase
-def upload_image_to_supabase(file_obj, file_name, bucket='img-juegos'):
-    try:
-       
-        # Lee el archivo en memoria
-        file_data = file_obj.read()
-        file_obj.seek(0)
-        
-        # Sube el archivo a Supabase
-        response = supabase.storage.from_(bucket).upload(
-            path=file_name,
-            file=file_data,
-            file_options={"content-type": file_obj.content_type}
-        )
-        
-        # Obtener la URL pública
-        public_url = supabase.storage.from_(bucket).get_public_url(file_name)
-        
-        print(f"URL generada: {public_url}")  # Para debugging
-        
-        return {
-            "success": True,
-            "path": public_url
-        }
-        
-    except Exception as e:
-        print(f"Error detallado al subir imagen: {str(e)}")
-        return {
-            "success": False,
-            "error": str(e)
-        }
-
 @login_required(login_url='login')
 def restar_stock(request, juego_id, stock_id):
     stock = get_object_or_404(Stock, idStock=stock_id, juego__id=juego_id)
@@ -691,11 +624,6 @@ def eliminar_alerta_stock(request, juego_id):
     AlertaStock.objects.filter(juego_id=juego_id).delete()
     return JsonResponse({'ok': True})
 
-
-def obtener_stock_total_juego(juego_id):
-    total = Stock.objects.filter(juego_id=juego_id).aggregate(Sum('cantidad'))['cantidad__sum']
-    return total or 0
-
 def editar_ubicacion(request, id):
     ubicacion = get_object_or_404(Ubicacion, idUbicacion=id)
 
@@ -731,11 +659,6 @@ def eliminar_ubicacion(request, id):
     ubicacion.delete()
     messages.success(request, "Ubicación eliminada correctamente.")
     return redirect('lista_ubicaciones')
-
-def buscar_ubicaciones(termino):
-    if termino:
-        return Ubicacion.objects.filter(nombreUbicacion__icontains=termino)
-    return Ubicacion.objects.all()
 
 @login_required(login_url='login')
 def cambiar_ubicacion_juego(request, juego_id):
@@ -858,10 +781,6 @@ def estadisticas_stock(request):
         'salidas_totales': salidas_totales
     }
     return render(request, 'Reportes/estadisticas_stock.html', context)
-
-from django.template.loader import get_template
-from xhtml2pdf import pisa
-from io import BytesIO
 
 def generar_pdf_movimientos(request):
     # Obtener los mismos filtros que en ver_movimientos_stock
@@ -1016,36 +935,6 @@ def reactivar_juego(request, pk):
     })
     
 @login_required
-@require_POST
-def eliminar_devolucion(request, id):
-    devolucion = get_object_or_404(Devolucion, id=id)
-    
-    try:
-        stock = Stock.objects.filter(
-            juego=devolucion.juego,
-            ubicacion=devolucion.ubicacion_destino
-        ).first()
-        
-        if stock:
-            stock.cantidad -= devolucion.cantidad
-            stock.save()
-        
-        MovimientoStock.objects.filter(
-            juego=devolucion.juego,
-            ubicacion=devolucion.ubicacion_destino,
-            cantidad=devolucion.cantidad,
-            tipo_movimiento='DEVOLUC'
-        ).delete()
-        
-        devolucion.delete()
-        
-        messages.success(request, 'Devolución eliminada correctamente.')
-    except Exception as e:
-        messages.error(request, f'Error al eliminar la devolución: {str(e)}')
-    
-    return redirect('listar_devoluciones')
-
-@login_required
 def registrar_devolucion(request):
     if request.method == 'POST':
         form = DevolucionForm(request.POST)
@@ -1096,17 +985,14 @@ def registrar_devolucion(request):
 @require_POST
 def eliminar_devolucion(request, id):
     devolucion = get_object_or_404(Devolucion, id=id)
-    
     try:
         stock = Stock.objects.filter(
             juego=devolucion.juego,
             ubicacion=devolucion.ubicacion_destino
         ).first()
-        
         if stock:
             stock.cantidad -= devolucion.cantidad
             stock.save()
-        
         MovimientoStock.objects.filter(
             juego=devolucion.juego,
             ubicacion=devolucion.ubicacion_destino,
@@ -1115,11 +1001,9 @@ def eliminar_devolucion(request, id):
         ).delete()
         # Eliminar la devolucion
         devolucion.delete()
-        
         messages.success(request, 'Devolución eliminada correctamente.')
     except Exception as e:
         messages.error(request, f'Error al eliminar la devolución: {str(e)}')
-    
     return redirect('listar_devoluciones')
 
 @login_required
