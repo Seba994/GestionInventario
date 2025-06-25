@@ -108,7 +108,7 @@ class Juego(models.Model):
     @property
     def ultimo_cambio_estado(self):
         """Obtiene el último cambio de estado registrado para este juego"""
-        return self.cambiojuego_set.filter(campo_modificado='estado').order_by('-fecha').first()
+        return self.cambios.filter(campo_modificado='estado').order_by('-fecha').first()
 
     def __str__(self):
         return str(self.nombreJuego)
@@ -130,19 +130,19 @@ class MovimientoStock(models.Model):
     observacion = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.tipo_movimiento} - {self.juego.nombreJuego} - {self.cantidad}"
+        return f"{self.tipo_movimiento} - {str(self.juego)} - {self.cantidad}"
 
 class CambioJuego(models.Model):
     """Modelo para registrar cambios en los juegos"""
-    juego = models.ForeignKey(Juego, on_delete=models.CASCADE)
+    juego = models.ForeignKey(Juego, on_delete=models.CASCADE, related_name='cambios')
     usuario = models.ForeignKey(Personal, on_delete=models.CASCADE)
     fecha = models.DateTimeField(default=timezone.now)
     campo_modificado = models.CharField(max_length=100)
     valor_anterior = models.TextField()
     valor_nuevo = models.TextField()
-    
+
     def __str__(self):
-        return f"Cambio en {self.juego.nombreJuego} - {self.campo_modificado}"
+        return f"Cambio en {str(self.juego)} - {self.campo_modificado}"
 
 class Devolucion(models.Model):
     """Modelo para registrar devoluciones de juegos."""
@@ -169,12 +169,13 @@ class Devolucion(models.Model):
     )
 
     class Meta:
+        """Meta options for Devolucion model."""
         verbose_name = "Devolución"
         verbose_name_plural = "Devoluciones"
         ordering = ['-fecha']
 
     def __str__(self):
-        return f"Devolución de {self.juego.nombreJuego} ({self.cantidad} unidades)"
+        return f"Devolución de {str(self.juego)} ({self.cantidad} unidades)"
 
 class AlertaStock(models.Model):
     """Modelo para alertar sobre stock bajo de un juego."""
@@ -183,5 +184,4 @@ class AlertaStock(models.Model):
     creada_en = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"⚠️ Stock bajo: {self.juego.nombreJuego} ({self.cantidad})"
-
+        return f"⚠️ Stock bajo: {str(self.juego)} ({self.cantidad})"
