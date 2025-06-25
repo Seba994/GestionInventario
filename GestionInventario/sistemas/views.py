@@ -624,7 +624,6 @@ def eliminar_ubicacion(request, id):
 def cambiar_ubicacion_juego(request, juego_id):
     juego = get_object_or_404(Juego, pk=juego_id)
     stocks_actuales = Stock.objects.filter(juego=juego)
-    
     if request.method == 'POST':
         form = CambiarUbicacionForm(request.POST, juego=juego)
         if form.is_valid():
@@ -632,38 +631,32 @@ def cambiar_ubicacion_juego(request, juego_id):
             ubicacion_destino = form.cleaned_data['nueva_ubicacion']
             cantidad = form.cleaned_data['cantidad']
             motivo = form.cleaned_data['motivo']
-            
             try:
                 ubicacion_origen = Ubicacion.objects.get(idUbicacion=ubicacion_origen_id)
                 stock_origen = Stock.objects.get(juego=juego, ubicacion=ubicacion_origen)
-                
                 if cantidad > stock_origen.cantidad:
                     messages.error(request, 'No hay suficiente stock en la ubicación de origen')
                     return redirect('gestionar_stock', id=juego.id)
-                
                 # restra de ubicacion origen
                 stock_origen.cantidad -= cantidad
                 stock_origen.save()
-                
                 # sumar a ibucación destino
                 stock_destino, created = Stock.objects.get_or_create(
                     juego=juego,
                     ubicacion=ubicacion_destino,
                     defaults={'cantidad': cantidad}
                 )
-                
                 if not created:
                     stock_destino.cantidad += cantidad
                     stock_destino.save()
- 
-                messages.success(request, f'Se movieron {cantidad} unidades a {ubicacion_destino.nombreUbicacion}')
+                messages.success(request,
+                        f'Se movieron {cantidad} unidades a {ubicacion_destino.nombreUbicacion}')
                 return redirect('gestionar_stock', id=juego.id)
-                
             except Exception as e:
                 messages.error(request, f'Error al mover el stock: {str(e)}')
     else:
         form = CambiarUbicacionForm(juego=juego)
-    
+
     return render(request, 'juegos/cambiar_ubicacion.html', {
         'form': form,
         'juego': juego,
