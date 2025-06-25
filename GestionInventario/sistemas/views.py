@@ -19,6 +19,7 @@ from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Dis
 from .models import Clasificacion, MovimientoStock, CambioJuego, Devolucion, AlertaStock
 from .decorators import rol_requerido
 from .utils import buscar_ubicaciones, sanitize_filename, obtener_stock_total_juego
+from .utils import upload_image_to_supabase
 
 # Inicializar el cliente de Supabase
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -29,12 +30,11 @@ def crear_personal(request):
         if form.is_valid():
             form.save()
             messages.success(request, "Personal creado correctamente.")
-            return redirect('gestion_usuarios')  
-    
+            return redirect('gestion_usuarios')
     else:
         form = PersonalForm()
 
-    return render(request, 'Registros/crear_personal.html', 
+    return render(request, 'Registros/crear_personal.html',
                   {'form': form})
 
 def crear_rol(request):
@@ -43,7 +43,7 @@ def crear_rol(request):
         if form.is_valid():
             form.save()
             messages.success(request, "Rol creado correctamente.")
-            return redirect('gestion_usuarios')  
+            return redirect('gestion_usuarios')
     else:
         form = RolForm()
     return render(request, 'Registros/crear_rol.html', {'form': form})
@@ -119,7 +119,6 @@ def eliminar_usuario(request, id):
 def modificar_rol(request, id):
     # Obtener el personal directamente
     personal = get_object_or_404(Personal, usuario_id=id)
-    
     if request.method == 'POST':
         form = ModificarRolForm(request.POST, instance=personal)
         if form.is_valid():
@@ -137,7 +136,6 @@ def modificar_rol(request, id):
         'personal': personal
     })
 
-# Vista para registrar nuevas consolas
 def registrar_consola(request):
     if request.method == 'POST':
         form = ConsolaForm(request.POST)
@@ -149,12 +147,10 @@ def registrar_consola(request):
         form = ConsolaForm()
     return render(request, 'Registros/registrar_consolas.html', {'form': form})
 
-# Vista para listar consolas
 def lista_consolas(request):
     consolas = Consola.objects.all()
     return render(request, 'consolas/lista.html', {'consolas': consolas})
 
-# Vista para registrar nuevas ubicación
 def registrar_ubicacion(request):
     if request.method == 'POST':
         form = UbicacionForm(request.POST)
@@ -169,7 +165,6 @@ def agregar_varias_ubicaciones(request):
     if request.method == 'POST':
         nombres = request.POST.getlist('nombreUbicacion[]')
         descripciones = request.POST.getlist('descripcionUbicacion[]')
-        
         for nombre, descripcion in zip(nombres, descripciones):
             if nombre.strip():
                 Ubicacion.objects.create(
@@ -181,15 +176,12 @@ def agregar_varias_ubicaciones(request):
 
     return render(request, 'ubicaciones/agregar_varias_ubicaciones.html')
 
-# Vista para listar ubicaciones
 def lista_ubicaciones(request):
     termino_busqueda = request.GET.get('search', '')
     ubicaciones = buscar_ubicaciones(termino_busqueda)
-
     paginator = Paginator(ubicaciones, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-
     context = {
         'ubicaciones': page_obj,
         'page_obj': page_obj,
@@ -197,7 +189,6 @@ def lista_ubicaciones(request):
     }
     return render(request, 'ubicaciones/lista_ubicacion.html', context)
 
-# Vista para registrar juego
 @login_required(login_url='login')
 def registrar_juego(request):
     if request.method == 'POST':
@@ -208,7 +199,6 @@ def registrar_juego(request):
                     imagen = request.FILES['imagen']
                     nombre_limpio = sanitize_filename(imagen.name)
                     resultado = upload_image_to_supabase(imagen, nombre_limpio)
-                    
                     if resultado["success"]:
                         juego = form.save(commit=False)
                         juego.imagen = resultado["path"]
@@ -220,7 +210,6 @@ def registrar_juego(request):
                 else:
                     juego = form.save()
                     messages.success(request, '✅ Juego registrado exitosamente.')
-                
                 # Manejar la redirección según la acción
                 accion = request.POST.get('action')
                 if accion == 'guardar_otro':
@@ -229,13 +218,11 @@ def registrar_juego(request):
                     return redirect('gestionar_stock', id=juego.id)
                 else:
                     return redirect('listar_juegos_con_stock')
-                    
             except Exception as e:
                 messages.error(request, f'❌ Error al guardar: {str(e)}')
                 print(f"Error: {str(e)}")
                 return render(request, 'Registros/registrar_juego.html', {'form': form})
         else:
-            # Mostrar errores específicos del formulario
             for field in form:
                 for error in field.errors:
                     messages.error(request, f'Error en {field.label}: {error}')
@@ -246,8 +233,6 @@ def registrar_juego(request):
         'form': form
     })
 
-  # Vista para listar juegos
-
 def lista_juegos(request):
     juegos = Juego.objects.all()
     return render(request, 'juegos/lista_con_stock.html', {'juegos': juegos})
@@ -255,7 +240,6 @@ def lista_juegos(request):
 @login_required(login_url='login')
 def principal(request):
     return render(request, 'principal/index.html')
-
 
 def detalle_juego(request, pk):
     juego = get_object_or_404(Juego.objects.select_related(
@@ -278,12 +262,10 @@ def eliminar_juego(request, pk):
                 valor_anterior=estado_anterior.nombreEstado,
                 valor_nuevo=estado_inactivo.nombreEstado
             )
-            
-            # Registrar la salida del stock si existe
             stocks = Stock.objects.filter(juego=juego)
             for stock in stocks:
                 if stock.cantidad > 0:
-                    MovimientoStock.objects.create(
+                    MovimientoStock.objects.create( # Registrar la salida del stock si existe
                         juego=juego,
                         ubicacion=stock.ubicacion,
                         usuario=request.user.personal,
@@ -291,12 +273,9 @@ def eliminar_juego(request, pk):
                         cantidad=stock.cantidad,
                         observacion=f'Juego marcado como {estado_inactivo.nombreEstado}'
                     )
-                    # Poner el stock en 0
-                    stock.cantidad = 0
+                    stock.cantidad = 0 # Poner el stock en 0
                     stock.save()
-            
-            # Cambiar el estado del juego
-            juego.estado = estado_inactivo
+            juego.estado = estado_inactivo # Cambiar el estado del juego
             juego.save()
             
             messages.success(request, f'✅ Juego marcado como {estado_inactivo.nombreEstado} correctamente')
@@ -317,12 +296,10 @@ def buscar_juego(request):
 def buscar_juego_ubicacion(request):
     ubicacion = request.GET.get('ubicacion', '')
     juegos = []
-    
     if ubicacion:
         juegos = Juego.objects.filter(
             stocks__ubicacion__nombreUbicacion__icontains=ubicacion
         ).distinct()
-    
     context = {
         'juegos': juegos,
         'busqueda': ubicacion,
@@ -344,17 +321,14 @@ def buscar_juego_rol(request):
 def listar_juegos_con_stock(request):
     # Obtén los filtros y normaliza a string para evitar None
     search = request.GET.get('search', '').strip()
-    consola = request.GET.get('consola', '') 
+    consola = request.GET.get('consola', '')
     distribucion = request.GET.get('distribucion', '')
     clasificacion = request.GET.get('clasificacion', '')
     estado = request.GET.get('estado', '')
     stock = request.GET.get('stock', '')
-    
     print("URL completa:", request.get_full_path())
     print("GET params:", dict(request.GET))
-
     juegos = Juego.objects.select_related('consola', 'distribucion', 'clasificacion', 'descripcion', 'estado')
-
     if search:
         juegos = juegos.filter(
             Q(nombreJuego__icontains=search) |
@@ -403,7 +377,6 @@ def listar_juegos_con_stock(request):
 
 def modificar_juego_id(request, id):
     juego = get_object_or_404(Juego, id=id)
-
     try:
         valores_antiguos = {
             'nombreJuego': juego.nombreJuego,
@@ -416,7 +389,6 @@ def modificar_juego_id(request, id):
         }
     except Exception as e:
         print(f"Error al obtener valores antiguos: {e}")
-
     try:
         if request.method == 'POST':
             form = ModificarJuegoForm(request.POST, instance=juego)
@@ -464,7 +436,6 @@ def modificar_juego_id(request, id):
 
 def modificar_juego_codbarra(request, codigoDeBarra):
     juego = get_object_or_404(Juego, codigoDeBarra=codigoDeBarra)
-    
     if request.method == 'POST':
         form = ModificarJuegoForm(request.POST, instance=juego)
         if form.is_valid():
@@ -478,10 +449,8 @@ def modificar_juego_codbarra(request, codigoDeBarra):
                 'descripcion': juego.descripcion,
                 'estado': juego.estado
             }
-            
             # Guardar el juego modificado
             juego_modificado = form.save()
-            
             # Comparar y registrar cambios
             for campo, valor_antiguo in valores_antiguos.items():
                 valor_nuevo = getattr(juego_modificado, campo)
@@ -496,7 +465,6 @@ def modificar_juego_codbarra(request, codigoDeBarra):
                         valor_nuevo=str(valor_nuevo)
                     )
                     print(f"Cambio registrado en {campo}: {valor_antiguo} -> {valor_nuevo}")
-            
             messages.success(request, '✅ Juego modificado correctamente.')
             return redirect('listar_juegos_con_stock')
         else:
@@ -504,7 +472,6 @@ def modificar_juego_codbarra(request, codigoDeBarra):
             messages.error(request, '❌ Error al modificar el juego.')
     else:
         form = ModificarJuegoForm(instance=juego)
-    
     return render(request, 'juegos/modificar_juego.html', {
         'form': form,
         'juego': juego
@@ -808,15 +775,12 @@ def generar_pdf_movimientos(request):
         'fecha_fin': fecha_fin,
         'fecha_generacion': datetime.now(),
     }
-
     # Renderizar el template HTML
     template = get_template('reportes/movimientos_stock_pdf.html')
     html = template.render(context)
-
     # Crear el PDF
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="reporte_movimientos.pdf"'
-    
     # Generar PDF
     pisa_status = pisa.CreatePDF(
         html, dest=response,
@@ -824,7 +788,6 @@ def generar_pdf_movimientos(request):
 
     if pisa_status.err:
         return HttpResponse('Error al generar el PDF')
-    
     return response
 
 def generar_pdf_inventario(request):
@@ -833,11 +796,9 @@ def generar_pdf_inventario(request):
         'consola', 'distribucion', 'clasificacion', 
         'descripcion', 'estado'
     ).all()
-
     # Calcular totales
     total_juegos = juegos.count()
     total_unidades = sum(juego.stock_total for juego in juegos)
-    
     # Agrupar por consola para el resumen
     resumen_consolas = {}
     for juego in juegos:
@@ -856,15 +817,12 @@ def generar_pdf_inventario(request):
         'resumen_consolas': resumen_consolas,
         'fecha_generacion': datetime.now(),
     }
-
     # Renderizar el template HTML
     template = get_template('reportes/inventario_pdf.html')
     html = template.render(context)
-
     # Crear el PDF
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="inventario_completo.pdf"'
-    
     # Generar PDF
     pisa_status = pisa.CreatePDF(
         html, dest=response,
@@ -873,37 +831,34 @@ def generar_pdf_inventario(request):
 
     if pisa_status.err:
         return HttpResponse('Error al generar el PDF')
-    
     return response
 
 @login_required
 def listar_juegos_descontinuados(request):
     # Obtener el estado "Descontinuado"
     estado_descontinuado = get_object_or_404(Estado, nombreEstado='Descontinuado')
-    
     # Obtener juegos descontinuados con relaciones necesarias
     juegos = Juego.objects.filter(
         estado=estado_descontinuado
     ).select_related(
         'consola', 'distribucion'
     ).order_by('nombreJuego')
-    
     # Paginación
     paginator = Paginator(juegos, 10)  # 10 juegos por página
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
+
     return render(request, 'juegos/lista_descontinuados.html', {
         'page_obj': page_obj,
         'titulo': 'Juegos Descontinuados'
     })
-    
+
 @login_required
 @rol_requerido('dueño')  # solo rol dueño pueden reactivar
 def reactivar_juego(request, pk):
     juego = get_object_or_404(Juego, pk=pk)
     estado_activo = Estado.objects.get(nombreEstado='Activo')
-    
+
     if request.method == 'POST':
         # Registrar el cambio
         CambioJuego.objects.create(
@@ -913,20 +868,18 @@ def reactivar_juego(request, pk):
             valor_anterior=juego.estado.nombreEstado,
             valor_nuevo=estado_activo.nombreEstado
         )
-        
-        
-            
+
         # Cambiar el estado
         juego.estado = estado_activo
         juego.save()
-        
+
         messages.success(request, f'El juego {juego.nombreJuego} ha sido reactivado.')
         return redirect('listar_juegos_descontinuados')
-    
+
     return render(request, 'juegos/confirmar_reactivar.html', {
         'juego': juego
     })
-    
+
 @login_required
 def registrar_devolucion(request):
     if request.method == 'POST':
@@ -934,11 +887,9 @@ def registrar_devolucion(request):
         if form.is_valid():
             devolucion = form.save(commit=False)
             devolucion.usuario = request.user.personal
-            
             try:
                 # Guardar la devolución primero
                 devolucion.save()
-                
                 # Actualizar el stock en la ubicación destino
                 stock, created = Stock.objects.get_or_create(
                     juego=devolucion.juego,
@@ -947,7 +898,6 @@ def registrar_devolucion(request):
                 )
                 stock.cantidad += devolucion.cantidad
                 stock.save()
-                
                 # Registrar movimiento de stock (con tipo corregido)
                 MovimientoStock.objects.create(
                     juego=devolucion.juego,
@@ -957,23 +907,22 @@ def registrar_devolucion(request):
                     cantidad=devolucion.cantidad,
                     observacion=devolucion.motivo or "Devolución registrada"
                 )
-                
-                messages.success(request, 
+                messages.success(request,
                     f"Devolución registrada: {devolucion.juego.nombreJuego} "
                     f"({devolucion.cantidad} unidades)"
                 )
                 return redirect('listar_devoluciones')
-                
+
             except Exception as e:
                 messages.error(request, f"Error al registrar: {str(e)}")
     else:
         form = DevolucionForm()
-    
+
     return render(request, 'juegos/registrar_devolucion.html', {
         'form': form,
         'titulo': 'Registrar Nueva Devolución'
     })
-    
+
 @login_required
 @require_POST
 def eliminar_devolucion(request, id):
@@ -1004,7 +953,6 @@ def listar_devoluciones(request):
     devoluciones = Devolucion.objects.select_related(
         'juego', 'ubicacion_destino', 'usuario'
     ).order_by('-fecha')
-    
     return render(request, 'juegos/listar_devoluciones.html', {
         'devoluciones': devoluciones,
         'titulo': 'Historial de Devoluciones'
