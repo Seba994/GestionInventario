@@ -672,6 +672,7 @@ def cambiar_ubicacion_juego(request, juego_id):
 
 @login_required(login_url='login')
 def ver_movimientos_stock(request):
+    """Vista para mostrar los movimientos de stock con filtros y estadísticas"""
     # Filtros
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
@@ -705,11 +706,13 @@ def ver_movimientos_stock(request):
 
 @login_required(login_url='login')
 def ver_cambios_juegos(request):
+    """Vista para mostrar los cambios realizados en los juegos"""
     cambios = CambioJuego.objects.select_related('juego', 'usuario').order_by('-fecha')
     return render(request, 'reportes/cambios_juegos.html', {'cambios': cambios})
 
 @login_required(login_url='login')
 def estadisticas_stock(request):
+    """Vista para mostrar estadísticas de stock"""
     # Período de tiempo (últimos 30 días por defecto)
     dias = int(request.GET.get('dias', 30))
     fecha_inicio = datetime.now() - timedelta(days=dias)
@@ -743,6 +746,7 @@ def estadisticas_stock(request):
     return render(request, 'Reportes/estadisticas_stock.html', context)
 
 def generar_pdf_movimientos(request):
+    """Genera un PDF con los movimientos de stock filtrados"""
     # Obtener los mismos filtros que en ver_movimientos_stock
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
@@ -791,6 +795,7 @@ def generar_pdf_movimientos(request):
     return response
 
 def generar_pdf_inventario(request):
+    """Genera un PDF con el inventario completo de juegos y su stock"""
     # Obtener todos los juegos con su stock
     juegos = Juego.objects.select_related(
         'consola', 'distribucion', 'clasificacion', 
@@ -835,6 +840,7 @@ def generar_pdf_inventario(request):
 
 @login_required
 def listar_juegos_descontinuados(request):
+    """Vista para listar juegos descontinuados"""
     # Obtener el estado "Descontinuado"
     estado_descontinuado = get_object_or_404(Estado, nombreEstado='Descontinuado')
     # Obtener juegos descontinuados con relaciones necesarias
@@ -856,6 +862,7 @@ def listar_juegos_descontinuados(request):
 @login_required
 @rol_requerido('dueño')  # solo rol dueño pueden reactivar
 def reactivar_juego(request, pk):
+    """Vista para reactivar el estado de un juego descontinuado"""
     juego = get_object_or_404(Juego, pk=pk)
     estado_activo = Estado.objects.get(nombreEstado='Activo')
 
@@ -882,6 +889,7 @@ def reactivar_juego(request, pk):
 
 @login_required
 def registrar_devolucion(request):
+    """Vista para registrar una nueva devolución de un juego"""
     if request.method == 'POST':
         form = DevolucionForm(request.POST)
         if form.is_valid():
@@ -926,6 +934,7 @@ def registrar_devolucion(request):
 @login_required
 @require_POST
 def eliminar_devolucion(request, id):
+    """Vista para eliminar una devolución específica"""
     devolucion = get_object_or_404(Devolucion, id=id)
     try:
         stock = Stock.objects.filter(
@@ -950,6 +959,7 @@ def eliminar_devolucion(request, id):
 
 @login_required
 def listar_devoluciones(request):
+    """Vista para listar todas las devoluciones registradas"""
     devoluciones = Devolucion.objects.select_related(
         'juego', 'ubicacion_destino', 'usuario'
     ).order_by('-fecha')
