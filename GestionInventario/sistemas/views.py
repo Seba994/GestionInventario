@@ -71,9 +71,9 @@ def gestion_usuarios(request):
         'usuarios': usuarios_data
     })
 
-def modificar_usuario(request, id):
+def modificar_usuario(request, usuario_id):
     """Vista para modificar un usuario existente."""
-    usuario = get_object_or_404(User, id=id)
+    usuario = get_object_or_404(User, id=usuario_id)
     personal = get_object_or_404(Personal, usuario=usuario)
 
     if request.method == 'POST':
@@ -92,9 +92,9 @@ def modificar_usuario(request, id):
         'is_editing': True
     })
 
-def eliminar_usuario(request, id):
+def eliminar_usuario(request, usuario_id):
     """Vista para eliminar un usuario del sistema."""
-    usuario = get_object_or_404(User, id=id)
+    usuario = get_object_or_404(User, id=usuario_id)
     try:
         personal = Personal.objects.get(usuario=usuario)
         datos_usuario = {
@@ -121,10 +121,10 @@ def eliminar_usuario(request, id):
         'datos': datos_usuario  
     })
 
-def modificar_rol(request, id):
+def modificar_rol(request, usuario_id):
     """Vista para modificar el rol de un usuario."""
     # Obtener el personal directamente
-    personal = get_object_or_404(Personal, usuario_id=id)
+    personal = get_object_or_404(Personal, usuario_id=usuario_id)
     if request.method == 'POST':
         form = ModificarRolForm(request.POST, instance=personal)
         if form.is_valid():
@@ -393,9 +393,9 @@ def listar_juegos_con_stock(request):
         'current_filters': current_filters,
     })
 
-def modificar_juego_id(request, id):
+def modificar_juego_id(request, juego_id):
     """Vista para modificar un juego por su ID"""
-    juego = get_object_or_404(Juego, id=id)
+    juego = get_object_or_404(Juego, id=juego_id)
     try:
         valores_antiguos = {
             'nombreJuego': juego.nombreJuego,
@@ -504,9 +504,9 @@ def obtener_clasificaciones(request):
     return JsonResponse(list(clasificaciones), safe=False)
 
 @login_required(login_url='login')
-def gestionar_stock(request, id):
+def gestionar_stock(request, juego_id):
     """Vista para gestionar el stock de un juego específico"""
-    juego = get_object_or_404(Juego, pk=id)
+    juego = get_object_or_404(Juego, pk=juego_id)
     stocks = Stock.objects.filter(juego=juego)
 
     return render(request, 'Registros/gestionar_stock.html', {
@@ -607,9 +607,9 @@ def eliminar_alerta_stock(request, juego_id):
     AlertaStock.objects.filter(juego_id=juego_id).delete()
     return JsonResponse({'ok': True})
 
-def editar_ubicacion(request, id):
+def editar_ubicacion(request, ubicacion_id):
     """Vista para editar una ubicación del inventario"""
-    ubicacion = get_object_or_404(Ubicacion, idUbicacion=id)
+    ubicacion = get_object_or_404(Ubicacion, idUbicacion=ubicacion_id)
 
     if request.method == 'POST':
         form = UbicacionForm(request.POST, instance=ubicacion)
@@ -625,9 +625,9 @@ def editar_ubicacion(request, id):
         'titulo': 'Editar Ubicación'
     })
 
-def eliminar_ubicacion(request, id):
+def eliminar_ubicacion(request, ubicacion_id):
     """Vista para eliminar una ubicación del inventario"""
-    ubicacion = get_object_or_404(Ubicacion, pk=id)
+    ubicacion = get_object_or_404(Ubicacion, pk=ubicacion_id)
     # Obtener todos los registros de stock de esta ubicación
     stock_asociado = Stock.objects.filter(ubicacion=ubicacion)
     # Verificar si alguno tiene stock mayor a 0
@@ -948,9 +948,9 @@ def registrar_devolucion(request):
 
 @login_required
 @require_POST
-def eliminar_devolucion(request, id):
+def eliminar_devolucion(request, devolucion_id):
     """Vista para eliminar una devolución específica"""
-    devolucion = get_object_or_404(Devolucion, id=id)
+    devolucion = get_object_or_404(Devolucion, id=devolucion_id)
     try:
         stock = Stock.objects.filter(
             juego=devolucion.juego,
