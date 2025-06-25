@@ -292,15 +292,13 @@ def eliminar_juego(request, pk):
                     stock.save()
             juego.estado = estado_inactivo # Cambiar el estado del juego
             juego.save()
-            
-            messages.success(request, f'✅ Juego marcado como {estado_inactivo.nombreEstado} correctamente')
+            messages.success(request,
+                             f'✅ Juego marcado como {estado_inactivo.nombreEstado} correctamente')
         except Estado.DoesNotExist:
             messages.error(request, '❌ Error: No existe el estado Inactivo en el sistema')
         except Exception as e:
             messages.error(request, f'❌ Error al cambiar estado del juego: {str(e)}')
-        
         return redirect('listar_juegos_con_stock')
-    
     return render(request, 'Editar/confirmar_eliminacion.html', {'juego': juego})
 
 def buscar_juego(request):
@@ -348,7 +346,8 @@ def listar_juegos_con_stock(request):
     stock = request.GET.get('stock', '')
     print("URL completa:", request.get_full_path())
     print("GET params:", dict(request.GET))
-    juegos = Juego.objects.select_related('consola', 'distribucion', 'clasificacion', 'descripcion', 'estado')
+    juegos = Juego.objects.select_related('consola', 'distribucion', 'clasificacion',
+                                          'descripcion', 'estado')
     if search:
         juegos = juegos.filter(
             Q(nombreJuego__icontains=search) |
@@ -381,7 +380,7 @@ def listar_juegos_con_stock(request):
         'stock': stock,
     }
 
-    juegos = juegos.filter(estado__nombreEstado='Activo')  
+    juegos = juegos.filter(estado__nombreEstado='Activo')
     paginator = Paginator(juegos.order_by('nombreJuego'), 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -588,7 +587,6 @@ def restar_stock(request, juego_id, stock_id):
             # TODO: Enviar alerta por correo: stock agotado (0 unidades)
             print("ALERTA: El stock total ha llegado a 0.")
             messages.warning(request, '⚠️ ALERTA: El stock total ha llegado a 0.')
-        
         if stock_total < 5:
             from .models import AlertaStock
             alerta, creada = AlertaStock.objects.update_or_create(
@@ -597,8 +595,8 @@ def restar_stock(request, juego_id, stock_id):
             )
             print(f"⚠️ Alerta visual guardada: stock = {stock_total}")
 
-
-        messages.success(request, f'Se ha restado una unidad del stock en {stock.ubicacion.nombreUbicacion}.')
+        messages.success(request,
+                    f'Se ha restado una unidad del stock en {stock.ubicacion.nombreUbicacion}.')
     else:
         messages.warning(request, 'No se puede restar, ya que el stock ya está en 0.')
 
@@ -619,7 +617,7 @@ def editar_ubicacion(request, id):
         form = UbicacionForm(request.POST, instance=ubicacion)
         if form.is_valid():
             form.save()
-            return redirect('lista_ubicaciones') 
+            return redirect('lista_ubicaciones')
     else:
         form = UbicacionForm(instance=ubicacion)
 
@@ -632,18 +630,14 @@ def editar_ubicacion(request, id):
 def eliminar_ubicacion(request, id):
     """Vista para eliminar una ubicación del inventario"""
     ubicacion = get_object_or_404(Ubicacion, pk=id)
-    
     # Obtener todos los registros de stock de esta ubicación
     stock_asociado = Stock.objects.filter(ubicacion=ubicacion)
-    
     # Verificar si alguno tiene stock mayor a 0
     if any(s.cantidad > 0 for s in stock_asociado):
         messages.error(request, "No se puede eliminar la ubicación porque aún contiene stock.")
         return redirect('lista_ubicaciones')
-    
     # Eliminar los registros de stock asociados (todos son 0)
     stock_asociado.delete()
-    
     # Eliminar la ubicación
     ubicacion.delete()
     messages.success(request, "Ubicación eliminada correctamente.")
