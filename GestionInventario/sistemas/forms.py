@@ -33,7 +33,7 @@ class PersonalForm(UserCreationForm):
         for visible in self.visible_fields():
             visible.field.widget.attrs['class'] = 'form-control'
 
-class ModificarRolUsuarioForm(forms.ModelForm):
+class ModificarRolForm(forms.ModelForm):
     class Meta:
         model = Personal 
         fields = ['rol']  

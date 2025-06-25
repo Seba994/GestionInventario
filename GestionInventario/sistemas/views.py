@@ -1,27 +1,24 @@
-from multiprocessing import context
-from pyexpat.errors import messages
-from re import search
-from urllib.parse import quote
+"""Vistas del sistema"""
+from datetime import datetime, timedelta
 from django.shortcuts import get_object_or_404, render, redirect
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import  JsonResponse, HttpResponse
-from django.db.models import Q, Sum, Count, OuterRef, Subquery
+from django.db.models import Q, Sum
 from django.db.models.functions import TruncDate
 from django.template.loader import get_template
-from datetime import datetime, timedelta
-from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm, DevolucionForm
-from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion, MovimientoStock, CambioJuego, Devolucion, AlertaStock
-from .decorators import rol_requerido
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from supabase import create_client, Client
-from GestionInventario.settings import SUPABASE_URL, SUPABASE_KEY
 from django.views.decorators.http import require_POST
-from sistemas.utils import buscar_ubicaciones, sanitize_filename, obtener_stock_total_juego
+from supabase import create_client, Client
 from xhtml2pdf import pisa
+from GestionInventario.settings import SUPABASE_URL, SUPABASE_KEY
+from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm
+from .forms import ModificarRolForm, ModificarPersonalForm, CambiarUbicacionForm, DevolucionForm
+from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion
+from .models import Clasificacion, MovimientoStock, CambioJuego, Devolucion, AlertaStock
+from .decorators import rol_requerido
+from .utils import buscar_ubicaciones, sanitize_filename, obtener_stock_total_juego
 
 # Inicializar el cliente de Supabase
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -54,23 +51,19 @@ def crear_rol(request):
 @login_required(login_url='login')
 @rol_requerido('dueño')  # Solo permite acceso a usuarios con rol "dueño"
 def gestion_usuarios(request):
+    """Vista para gestionar usuarios del sistema."""
     usuarios_data = []
-
     for user in User.objects.all():
-        try:
-            personal = Personal.objects.get(usuario=user)
-            usuarios_data.append({
-                'id': user.id,           
-                'nombre': personal.nombre,
-                'rol': personal.rol.rol,
-                'usuario': user.username,
-                'telefono': personal.telefono,
-                'estado': user.is_active,
-                'ultimo_ingreso': user.last_login,
-            })
-        except Personal.DoesNotExist:
-            continue
-
+        personal = Personal.objects.get(usuario=user)
+        usuarios_data.append({
+            'id': user.id,           
+            'nombre': personal.nombre,
+            'rol': personal.rol.rol,
+            'usuario': user.username,
+            'telefono': personal.telefono,
+            'estado': user.is_active,
+            'ultimo_ingreso': user.last_login,
+        })
     return render(request, 'usuarios/gestion_usuarios.html', {
         'usuarios': usuarios_data
     })
@@ -128,13 +121,13 @@ def modificar_rol(request, id):
     personal = get_object_or_404(Personal, usuario_id=id)
     
     if request.method == 'POST':
-        form = ModificarRolUsuarioForm(request.POST, instance=personal)
+        form = ModificarRolForm(request.POST, instance=personal)
         if form.is_valid():
             form.save()
             messages.success(request, "Rol modificado correctamente.")
             return redirect('gestion_usuarios')
     else:
-        form = ModificarRolUsuarioForm(instance=personal)
+        form = ModificarRolForm(instance=personal)
         # Debugging
         print("Roles disponibles:", list(Rol.objects.all()))
         print("Rol actual:", personal.rol)
