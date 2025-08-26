@@ -93,6 +93,10 @@ DATABASES = {
         'PASSWORD': os.getenv('PASSWORD'),
         'HOST': os.getenv('HOST'),
         'PORT': os.getenv('PORT', '5432'),
+        'OPTIONS': {
+            'sslmode': 'require',
+            'options': '-c search_path=public'  # Importante para Supabase
+        }
     }
 }
 
