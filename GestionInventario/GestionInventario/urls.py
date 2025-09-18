@@ -30,6 +30,7 @@ urlpatterns = [
     path('usuarios/editar/<int:id>/', views.modificar_usuario, name='modificar_usuario'),
     path('usuarios/eliminar/<int:id>/', views.eliminar_usuario, name='eliminar_usuario'),
     path('usuarios/modificar-rol/<int:id>/', views.modificar_rol, name='modificar_rol_usuario'),
+    path('registros/crear-rol/', views.crear_rol, name='crear_rol_usuario'),
     path('consolas/registrar/', views.registrar_consola, name='registrar_consola'),
     path('consolas/', views.lista_consolas, name='lista_consolas'),
     path('ubicaciones/registrar/', views.registrar_ubicacion, name='registrar_ubicacion'),
