@@ -7,6 +7,7 @@ from re import search
 from urllib.parse import quote
 from django.shortcuts import get_object_or_404, render, redirect
 from django.core.paginator import Paginator
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -1015,35 +1016,6 @@ def reactivar_juego(request, pk):
         'juego': juego
     })
     
-@login_required
-@require_POST
-def eliminar_devolucion(request, id):
-    devolucion = get_object_or_404(Devolucion, id=id)
-    
-    try:
-        stock = Stock.objects.filter(
-            juego=devolucion.juego,
-            ubicacion=devolucion.ubicacion_destino
-        ).first()
-        
-        if stock:
-            stock.cantidad -= devolucion.cantidad
-            stock.save()
-        
-        MovimientoStock.objects.filter(
-            juego=devolucion.juego,
-            ubicacion=devolucion.ubicacion_destino,
-            cantidad=devolucion.cantidad,
-            tipo_movimiento='DEVOLUC'
-        ).delete()
-        
-        devolucion.delete()
-        
-        messages.success(request, 'Devolución eliminada correctamente.')
-    except Exception as e:
-        messages.error(request, f'Error al eliminar la devolución: {str(e)}')
-    
-    return redirect('listar_devoluciones')
 
 @login_required
 def registrar_devolucion(request):
@@ -1096,30 +1068,36 @@ def registrar_devolucion(request):
 @require_POST
 def eliminar_devolucion(request, id):
     devolucion = get_object_or_404(Devolucion, id=id)
-    
     try:
         stock = Stock.objects.filter(
             juego=devolucion.juego,
             ubicacion=devolucion.ubicacion_destino
         ).first()
-        
-        if stock:
+
+        # Validar que haya suficiente stock para revertir la devolución
+        if stock and stock.cantidad >= devolucion.cantidad:
             stock.cantidad -= devolucion.cantidad
             stock.save()
-        
+        else:
+            raise ValidationError("No se puede eliminar: el stock real es menor que la devolución.")
+
+        # Eliminar el movimiento de stock asociado
         MovimientoStock.objects.filter(
             juego=devolucion.juego,
             ubicacion=devolucion.ubicacion_destino,
             cantidad=devolucion.cantidad,
             tipo_movimiento='DEVOLUC'
         ).delete()
-        # Eliminar la devolucion
+
+        # Eliminar la devolución
         devolucion.delete()
-        
         messages.success(request, 'Devolución eliminada correctamente.')
+
+    except ValidationError as e:
+        messages.error(request, f"❌ {str(e)}")
     except Exception as e:
-        messages.error(request, f'Error al eliminar la devolución: {str(e)}')
-    
+        messages.error(request, f'Error inesperado al eliminar la devolución: {str(e)}')
+
     return redirect('listar_devoluciones')
 
 @login_required
