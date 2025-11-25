@@ -66,5 +66,7 @@ urlpatterns = [
     path('devoluciones/', views.listar_devoluciones, name='listar_devoluciones'),
     path('devoluciones/eliminar/<int:id>/', views.eliminar_devolucion, name='eliminar_devolucion'),
     path('eliminar_alerta_stock/<int:juego_id>/', views.eliminar_alerta_stock, name='eliminar_alerta_stock'),
+    path('reportes/movimientos/excel/', views.exportar_movimientos_a_excel, name='exportar_movimientos_excel'),path('reportes/movimientos/excel/', views.exportar_movimientos_a_excel, name='exportar_movimientos_excel_filtrado'),
+    path('exportar/inventario/total/excel/', views.exportar_inventario_agregado_a_excel, name='exportar_inventario_total_excel'),
     
 ]

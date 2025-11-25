@@ -1,6 +1,7 @@
 import os
 import re
 import time
+import openpyxl
 from multiprocessing import context
 from pyexpat.errors import messages
 from re import search
@@ -1157,3 +1158,113 @@ def listar_devoluciones(request):
         'devoluciones': devoluciones,
         'titulo': 'Historial de Devoluciones'
     })
+    
+
+@login_required(login_url='login')
+@rol_requerido('dueño')
+
+
+def exportar_inventario_agregado_a_excel(request):
+    # 1. Obtener y agregar los datos (Stock total por juego)
+    juegos_con_stock = Juego.objects.annotate(
+        stock_total_calculado=Sum('stocks__cantidad')
+    ).order_by('nombreJuego')
+
+    # 2. Configurar la respuesta
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = 'attachment; filename="reporte_inventario_total.xlsx"'
+
+    # 3. Crear el libro y hoja
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = 'Inventario Total'
+
+    # 4. Escribir encabezados
+    columns = ['Código de Barra', 'Nombre del Juego', 'Consola', 'Clasificación', 'Stock Total']
+    worksheet.append(columns)
+
+    # 5. Escribir los datos
+    for juego in juegos_con_stock:
+        stock = juego.stock_total_calculado if juego.stock_total_calculado is not None else 0
+        row = [
+            juego.codigoDeBarra or '', 
+            juego.nombreJuego,
+            juego.consola.nombreConsola,
+            juego.clasificacion.descripcionClasificacion,
+            stock
+        ]
+        worksheet.append(row)
+
+    workbook.save(response)
+    return response
+
+
+def exportar_movimientos_a_excel(request):
+    # 1. Aplicar los Filtros del Request.GET (Copiando la lógica de tu vista principal)
+    movimientos = MovimientoStock.objects.select_related(
+        'juego', 'ubicacion', 'usuario__usuario' 
+    ).order_by('-fecha')
+
+    filtros = Q()
+    
+    fecha_inicio_str = request.GET.get('fecha_inicio')
+    fecha_fin_str = request.GET.get('fecha_fin')
+
+    if fecha_inicio_str:
+        try:
+            fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+            filtros &= Q(fecha__gte=fecha_inicio)
+        except ValueError:
+            pass
+            
+    if fecha_fin_str:
+        try:
+            fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
+            fecha_fin_siguiente = fecha_fin + timedelta(days=1)
+            filtros &= Q(fecha__lt=fecha_fin_siguiente)
+        except ValueError:
+            pass
+
+    tipo = request.GET.get('tipo')
+    if tipo in ['ENTRADA', 'SALIDA', 'DEVOLUC']: # Asumo que 'DEVOLUC' es un tipo válido si lo usas
+        filtros &= Q(tipo_movimiento=tipo)
+
+    juego_id_str = request.GET.get('juego')
+    if juego_id_str and juego_id_str.isdigit():
+        filtros &= Q(juego_id=int(juego_id_str))
+
+    movimientos_filtrados = movimientos.filter(filtros)
+    
+    # 2. Configurar la respuesta
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    filename = "movimientos_filtrados.xlsx" if filtros else "movimientos_completos.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    # 3. Crear el libro y hoja
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = 'Movimientos de Stock'
+
+    # 4. Escribir encabezados
+    columns = ['Fecha y Hora', 'Tipo', 'Juego', 'Ubicación', 'Cantidad', 'Registrado por', 'Observación']
+    worksheet.append(columns)
+
+    # 5. Escribir los datos
+    for mov in movimientos_filtrados:
+        row = [
+            mov.fecha.strftime('%d/%m/%Y %H:%M'), 
+            mov.get_tipo_movimiento_display(),
+            mov.juego.nombreJuego,
+            mov.ubicacion.nombreUbicacion,
+            mov.cantidad,
+            mov.usuario.nombre, 
+            mov.observacion or '-'
+        ]
+        worksheet.append(row)
+
+    workbook.save(response)
+    return response
