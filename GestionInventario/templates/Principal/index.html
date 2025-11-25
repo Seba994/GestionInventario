@@ -8,10 +8,23 @@
         <h1 class="display-4">Sistema de Gestión de Inventario</h1>
         <p class="lead">Bienvenido al sistema de control de inventario de juegos y consolas</p>
         
-        <!-- Información del rol del usuario -->
+        <!-- Información del rol del usuario - CORREGIDO -->
         <div class="alert alert-info d-inline-block">
             <small><strong>Conectado como:</strong> {{ user.username }} | <strong>Rol:</strong> {{ user_rol }}</small>
         </div>
+        
+        <!-- DEBUG: Mostrar todas las variables disponibles -->
+        {% if debug %}
+        <div class="alert alert-warning mt-2">
+            <strong>DEBUG Info:</strong><br>
+            user_rol: {{ user_rol }}<br>
+            is_dueño: {{ is_dueño }}<br>
+            is_bodeguero: {{ is_bodeguero }}<br>
+            is_locatario: {{ is_locatario }}<br>
+            puede_modificar_inventario: {{ puede_modificar_inventario }}<br>
+            puede_gestionar_stock: {{ puede_gestionar_stock }}
+        </div>
+        {% endif %}
     </header>
 
     <!-- Mostrar mensajes de error -->
@@ -19,7 +32,7 @@
     <div class="row">
         <div class="col-12">
             {% for message in messages %}
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
                 <strong>{{ message }}</strong>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
@@ -28,8 +41,7 @@
     </div>
     {% endif %}
 
-    <div class="row">
-        <!-- El resto de tu contenido aquí (igual que antes) -->
+    <div class="row d-flex justify-content-center">
         <!-- Tarjeta de Juegos - VISIBLE PARA TODOS -->
         <div class="col-md-4 mb-4">
             <div class="card h-100 shadow">
