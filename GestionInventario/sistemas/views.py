@@ -7,15 +7,17 @@ from re import search
 from urllib.parse import quote
 from django.shortcuts import get_object_or_404, render, redirect
 from django.core.paginator import Paginator
+from django.core.mail import send_mail
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.conf import settings
 from django.http import  JsonResponse, HttpResponse
 from django.db.models import Q, Sum, Count, OuterRef, Subquery
 from django.db.models.functions import TruncDate
 from datetime import datetime, timedelta
-from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm, DevolucionForm
-from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion, MovimientoStock, CambioJuego, Devolucion, AlertaStock
+from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm, DevolucionForm, CorreosForm
+from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion, MovimientoStock, CambioJuego, Devolucion, AlertaStock, Correos
 from .decorators import rol_requerido
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -77,6 +79,8 @@ def gestion_usuarios(request):
         'usuarios': usuarios_data
     })
 
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def modificar_usuario(request, id):
     usuario = get_object_or_404(User, id=id)
     personal = get_object_or_404(Personal, usuario=usuario)
@@ -97,6 +101,8 @@ def modificar_usuario(request, id):
         'is_editing': True
     })
 
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def eliminar_usuario(request, id):
     usuario = get_object_or_404(User, id=id)
     try:
@@ -125,6 +131,8 @@ def eliminar_usuario(request, id):
         'datos': datos_usuario  
     })
 
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def modificar_rol(request, id):
     # Obtener el personal directamente
     personal = get_object_or_404(Personal, usuario_id=id)
@@ -661,16 +669,17 @@ def restar_stock(request, juego_id, stock_id):
 
         # Alertas de stock bajo
         if stock_total == 5:
-            # TODO: Enviar alerta por correo: stock bajo (5 unidades)
+            enviar_correo(juego_id)
             print("ALERTA: El stock total ha bajado a 5 unidades.")
             messages.warning(request, '⚠️ ALERTA: El stock total ha bajado a 5 unidades.')
 
         if stock_total == 0:
-            # TODO: Enviar alerta por correo: stock agotado (0 unidades)
+            enviar_correo(juego_id)
             print("ALERTA: El stock total ha llegado a 0.")
             messages.warning(request, '⚠️ ALERTA: El stock total ha llegado a 0.')
         
         if stock_total < 5:
+            enviar_correo(juego_id)
             from .models import AlertaStock
             alerta, creada = AlertaStock.objects.update_or_create(
                 juego=stock.juego,
@@ -684,6 +693,34 @@ def restar_stock(request, juego_id, stock_id):
         messages.warning(request, 'No se puede restar, ya que el stock ya está en 0.')
 
     return redirect('gestionar_stock', id=juego_id)
+
+def enviar_correo(juego_id):
+    try:
+        juego = Juego.objects.get(pk=juego_id)
+    except Juego.DoesNotExist:
+        print("Error: juego no existe")
+        return  
+    print("si envia")
+    subject = f"Alerta: Stock bajo para el juego {juego.nombreJuego}"
+    if juego.imagen:
+        imagen_url = juego.imagen.url
+    else:
+        imagen_url = "Sin imagen disponible"
+    message = (
+        f"El juego '{juego.nombreJuego}' se está agotando.\n"
+        f"Quedan menos de 5 unidades.\n"
+        f"Imagen: {imagen_url}\n"
+        f"Cantidad actual: {juego.stock_total}\n"
+    )
+
+    send_mail(
+        subject,
+        message,
+        'sebastiannayar25@gmail.com',           # Remitente: tu gmail autenticado en SMTP
+        ['sebastian.nayar@hotmail.com'],        # Destinatario: cualquier correo, por ejemplo Hotmail
+        fail_silently=False,
+    )
+
 
 @require_POST
 @login_required
@@ -1132,3 +1169,36 @@ def listar_devoluciones(request):
         'devoluciones': devoluciones,
         'titulo': 'Historial de Devoluciones'
     })
+
+def gestionar_correos(request):
+    if request.method == 'POST':
+        form = CorreosForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('gestion_usuarios')
+    else:
+        form = CorreosForm()
+    correos = Correos.objects.select_related('usuario').all()
+    return render(request, 'usuarios/gestionar_correos.html', {'form': form, 'correos': correos})
+
+def editar_correo(request, correo_id):
+    correo = get_object_or_404(Correos, pk=correo_id)
+    if request.method == 'POST':
+        form = CorreosForm(request.POST, instance=correo)
+        if form.is_valid():
+            form.save()
+            return redirect('gestionar_correos')
+    else:
+        form = CorreosForm(instance=correo)
+    return render(request, 'editar_correo.html', {'form': form})
+
+def eliminar_correo(request, correo_id):
+    correo = get_object_or_404(Correos, pk=correo_id)
+    if request.method == 'POST':
+        correo.delete()
+        return redirect('gestionar_correos')
+    return render(request, 'confirmar_eliminacion_correo.html', {'correo': correo})
+
+def listar_correos(request):
+    correos = Correos.objects.select_related('usuario').all()
+    return render(request, 'usuarios/listar_correos.html', {'correos': correos})
