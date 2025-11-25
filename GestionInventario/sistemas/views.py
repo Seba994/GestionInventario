@@ -23,11 +23,15 @@ from rest_framework.response import Response
 from supabase import create_client, Client
 from GestionInventario.settings import SUPABASE_URL, SUPABASE_KEY
 from django.views.decorators.http import require_POST
+from .mixins import RolRequeridoMixin
 
 
 
 # Inicializar el cliente de Supabase
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+@login_required(login_url='login')
+@rol_requerido('dueño')  # Solo dueños pueden crear personal
 
 def crear_personal(request):
     if request.method == 'POST':
@@ -43,6 +47,9 @@ def crear_personal(request):
     return render(request, 'Registros/crear_personal.html', 
                   {'form': form})
 
+@login_required(login_url='login')
+@rol_requerido('dueño')  # Solo dueños pueden crear roles
+
 def crear_rol(request):
     if request.method == 'POST':
         form = RolForm(request.POST)
@@ -56,6 +63,7 @@ def crear_rol(request):
 
 @login_required(login_url='login')
 @rol_requerido('dueño')  # Solo permite acceso a usuarios con rol "dueño"
+
 def gestion_usuarios(request):
     usuarios_data = []
 
@@ -78,6 +86,9 @@ def gestion_usuarios(request):
         'usuarios': usuarios_data
     })
 
+@login_required(login_url='login')
+@rol_requerido('dueño')  # Solo dueños pueden modificar roles
+
 def modificar_usuario(request, id):
     usuario = get_object_or_404(User, id=id)
     personal = get_object_or_404(Personal, usuario=usuario)
@@ -97,6 +108,8 @@ def modificar_usuario(request, id):
         'personal': personal,
         'is_editing': True
     })
+@login_required(login_url='login')
+@rol_requerido('dueño')  # Solo dueños pueden eliminar usuarios
 
 def eliminar_usuario(request, id):
     usuario = get_object_or_404(User, id=id)
@@ -125,7 +138,8 @@ def eliminar_usuario(request, id):
     return render(request, 'Editar/confirmar_eliminacion_usuario.html', {
         'datos': datos_usuario  
     })
-
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def modificar_rol(request, id):
     # Obtener el personal directamente
     personal = get_object_or_404(Personal, usuario_id=id)
@@ -148,6 +162,8 @@ def modificar_rol(request, id):
     })
 
 # Vista para registrar nuevas consolas
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')  # Dueño y bodeguero pueden registrar consolas
 def registrar_consola(request):
     if request.method == 'POST':
         form = ConsolaForm(request.POST)
@@ -165,6 +181,8 @@ def lista_consolas(request):
     return render(request, 'consolas/lista.html', {'consolas': consolas})
 
 # Vista para registrar nuevas ubicación
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')  # Dueño y bodeguero pueden registrar ubicaciones
 def registrar_ubicacion(request):
     if request.method == 'POST':
         form = UbicacionForm(request.POST)
@@ -174,6 +192,9 @@ def registrar_ubicacion(request):
     else:
         form = UbicacionForm()
     return render(request, 'Registros/registrar_ubicaciones.html', {'form': form})
+
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')  # Dueño y bodeguero pueden editar ubicaciones
 
 def agregar_varias_ubicaciones(request):
     if request.method == 'POST':
@@ -233,6 +254,7 @@ def sanitize_filename(filename):
 
 # Vista para registrar juego
 @login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def registrar_juego(request):
     if request.method == 'POST':
         form = JuegoForm(request.POST, request.FILES)
@@ -295,6 +317,8 @@ def detalle_juego(request, pk):
     ), pk=pk)
     return render(request, 'Editar/detalle_juego.html', {'juego': juego})
 
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def eliminar_juego(request, pk):
     juego = get_object_or_404(Juego, pk=pk)
     if request.method == 'POST':
@@ -434,6 +458,8 @@ def listar_juegos_con_stock(request):
         'current_filters': current_filters,
     })
 
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def modificar_juego_id(request, id):
     juego = get_object_or_404(Juego, id=id)
 
@@ -495,6 +521,8 @@ def modificar_juego_id(request, id):
         'juego': juego
     })
 
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def modificar_juego_codbarra(request, codigoDeBarra):
     juego = get_object_or_404(Juego, codigoDeBarra=codigoDeBarra)
     
@@ -549,6 +577,7 @@ def obtener_clasificaciones(request):
     return JsonResponse(list(clasificaciones), safe=False)
 
 @login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def gestionar_stock(request, id):
     juego = get_object_or_404(Juego, pk=id)
     stocks = Stock.objects.filter(juego=juego)
@@ -559,6 +588,7 @@ def gestionar_stock(request, id):
     })
 
 @login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def agregar_stock(request, juego_id):
     juego = get_object_or_404(Juego, id=juego_id)
     ubicaciones = Ubicacion.objects.all()
@@ -597,6 +627,8 @@ def agregar_stock(request, juego_id):
         'ubicaciones': ubicaciones
     })
 
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def subir_imagen(request):
     if request.method == 'POST' and request.FILES['imagen']:
         imagen = request.FILES['imagen']
@@ -640,6 +672,7 @@ def upload_image_to_supabase(file_obj, file_name, bucket='img-juegos'):
         }
 
 @login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def restar_stock(request, juego_id, stock_id):
     stock = get_object_or_404(Stock, idStock=stock_id, juego__id=juego_id)
 
@@ -687,7 +720,8 @@ def restar_stock(request, juego_id, stock_id):
     return redirect('gestionar_stock', id=juego_id)
 
 @require_POST
-@login_required
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def eliminar_alerta_stock(request, juego_id):
     AlertaStock.objects.filter(juego_id=juego_id).delete()
     return JsonResponse({'ok': True})
@@ -697,6 +731,8 @@ def obtener_stock_total_juego(juego_id):
     total = Stock.objects.filter(juego_id=juego_id).aggregate(Sum('cantidad'))['cantidad__sum']
     return total or 0
 
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def editar_ubicacion(request, id):
     ubicacion = get_object_or_404(Ubicacion, idUbicacion=id)
 
@@ -713,7 +749,8 @@ def editar_ubicacion(request, id):
         'ubicacion': ubicacion,
         'titulo': 'Editar Ubicación'
     })
-
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def eliminar_ubicacion(request, id):
     ubicacion = get_object_or_404(Ubicacion, pk=id)
     
@@ -739,6 +776,7 @@ def buscar_ubicaciones(termino):
     return Ubicacion.objects.all()
 
 @login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def cambiar_ubicacion_juego(request, juego_id):
     juego = get_object_or_404(Juego, pk=juego_id)
     stocks_actuales = Stock.objects.filter(juego=juego)
@@ -789,6 +827,7 @@ def cambiar_ubicacion_juego(request, juego_id):
     })
 
 @login_required(login_url='login')
+@rol_requerido('dueño')
 def ver_movimientos_stock(request):
     # Filtros
     fecha_inicio = request.GET.get('fecha_inicio')
@@ -822,11 +861,13 @@ def ver_movimientos_stock(request):
     return render(request, 'reportes/movimientos_stock.html', context)
 
 @login_required(login_url='login')
+@rol_requerido('dueño')
 def ver_cambios_juegos(request):
     cambios = CambioJuego.objects.select_related('juego', 'usuario').order_by('-fecha')
     return render(request, 'reportes/cambios_juegos.html', {'cambios': cambios})
 
 @login_required(login_url='login')
+@rol_requerido('dueño')
 def estadisticas_stock(request):
     # Período de tiempo (últimos 30 días por defecto)
     dias = int(request.GET.get('dias', 30))
@@ -864,6 +905,8 @@ from django.template.loader import get_template
 from xhtml2pdf import pisa
 from io import BytesIO
 
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def generar_pdf_movimientos(request):
     # Obtener los mismos filtros que en ver_movimientos_stock
     fecha_inicio = request.GET.get('fecha_inicio')
@@ -965,7 +1008,7 @@ def generar_pdf_inventario(request):
     
     return response
 
-@login_required
+@login_required(login_url='login')
 def listar_juegos_descontinuados(request):
     # Obtener el estado "Descontinuado"
     estado_descontinuado = get_object_or_404(Estado, nombreEstado='Descontinuado')
@@ -1017,7 +1060,8 @@ def reactivar_juego(request, pk):
     })
     
 
-@login_required
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def registrar_devolucion(request):
     if request.method == 'POST':
         form = DevolucionForm(request.POST)
@@ -1064,8 +1108,10 @@ def registrar_devolucion(request):
         'titulo': 'Registrar Nueva Devolución'
     })
     
-@login_required
+
 @require_POST
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def eliminar_devolucion(request, id):
     devolucion = get_object_or_404(Devolucion, id=id)
     try:
@@ -1100,7 +1146,8 @@ def eliminar_devolucion(request, id):
 
     return redirect('listar_devoluciones')
 
-@login_required
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def listar_devoluciones(request):
     devoluciones = Devolucion.objects.select_related(
         'juego', 'ubicacion_destino', 'usuario'

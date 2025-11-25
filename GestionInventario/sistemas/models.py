@@ -1,4 +1,4 @@
-"""Modelos de datos de la aplicacion"""
+#models.py
 
 from django.contrib.auth.models import User
 from django.db import models
