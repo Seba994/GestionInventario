@@ -1,4 +1,4 @@
-"""Modelos de datos de la aplicacion"""
+#models.py
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -7,17 +7,25 @@ from django.utils import timezone
 
 class Rol(models.Model):
     """Modelo que define los roles de los usuarios en el sistema."""
-    rol = models.CharField(max_length=50)
+    rol = models.CharField("Nombre del Rol", max_length=50)
+
+    class Meta:
+        verbose_name = "Rol"
+        verbose_name_plural = "Roles"
 
     def __str__(self):
         return str(self.rol)
 
 class Personal(models.Model):
     """Modelo que define el personal del sistema."""
-    nombre = models.CharField(max_length=100)
-    rol = models.ForeignKey(Rol, on_delete=models.CASCADE)
-    telefono = models.CharField(max_length=15)
-    usuario = models.OneToOneField(User, on_delete=models.CASCADE)
+    nombre = models.CharField("Nombre", max_length=100)
+    rol = models.ForeignKey(Rol, on_delete=models.CASCADE, verbose_name="Rol asignado")
+    telefono = models.CharField("Teléfono", max_length=15)
+    usuario = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Usuario del sistema")
+
+    class Meta:
+        verbose_name = "Personal"
+        verbose_name_plural = "Personal"
     def __str__(self):
         return str(self.nombre)
 
