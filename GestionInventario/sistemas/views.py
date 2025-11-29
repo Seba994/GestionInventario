@@ -34,7 +34,7 @@ from .mixins import RolRequeridoMixin
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 @login_required(login_url='login')
-@rol_requerido('dueño')  # Solo dueños pueden crear personal
+@rol_requerido('dueño', 'Admin Web')  
 
 def crear_personal(request):
     if request.method == 'POST':
@@ -51,7 +51,7 @@ def crear_personal(request):
                   {'form': form})
 
 @login_required(login_url='login')
-@rol_requerido('dueño')  # Solo dueños pueden crear roles
+@rol_requerido('dueño', 'admin web ')  
 
 def crear_rol(request):
     if request.method == 'POST':
@@ -65,7 +65,7 @@ def crear_rol(request):
     return render(request, 'Registros/crear_rol.html', {'form': form})
 
 @login_required(login_url='login')
-@rol_requerido('dueño')  # Solo permite acceso a usuarios con rol "dueño"
+@rol_requerido('dueño', 'admin web')  
 
 def gestion_usuarios(request):
     usuarios_data = []
@@ -90,8 +90,7 @@ def gestion_usuarios(request):
     })
 
 @login_required(login_url='login')
-@rol_requerido('dueño')
-@rol_requerido('dueño')  # Solo dueños pueden modificar roles
+@rol_requerido('dueño', 'admin web')
 
 def modificar_usuario(request, id):
     usuario = get_object_or_404(User, id=id)
@@ -112,11 +111,9 @@ def modificar_usuario(request, id):
         'personal': personal,
         'is_editing': True
     })
-@login_required(login_url='login')
-@rol_requerido('dueño')  # Solo dueños pueden eliminar usuarios
 
 @login_required(login_url='login')
-@rol_requerido('dueño')
+@rol_requerido('dueño', 'admin web')
 def eliminar_usuario(request, id):
     usuario = get_object_or_404(User, id=id)
     try:
@@ -146,7 +143,7 @@ def eliminar_usuario(request, id):
     })
 
 @login_required(login_url='login')
-@rol_requerido('dueño')
+@rol_requerido('dueño', 'admin web')
 def modificar_rol(request, id):
     # Obtener el personal directamente
     personal = get_object_or_404(Personal, usuario_id=id)

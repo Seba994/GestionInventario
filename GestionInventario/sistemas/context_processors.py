@@ -7,9 +7,12 @@ def user_roles(request):
             'is_dueño': user_rol == 'dueño',
             'is_bodeguero': user_rol == 'bodeguero', 
             'is_locatario': user_rol == 'locatario',
-            'puede_administrar_usuarios': user_rol == 'dueño',
+            'is_admin_web': user_rol == 'admin web',
+            
+            
+            'puede_administrar_usuarios': user_rol == ['dueño', 'admin web'],
             'puede_gestionar_stock': user_rol in ['dueño', 'bodeguero'],
             'puede_modificar_inventario': user_rol in ['dueño', 'bodeguero'],
-            'puede_ver_reportes': user_rol == 'dueño',  # SOLO dueño ve reportes
+            'puede_ver_reportes': user_rol == 'dueño', 
         }
     return {}
