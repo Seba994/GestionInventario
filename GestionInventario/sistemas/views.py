@@ -706,6 +706,27 @@ def enviar_correo(juego_id):
         imagen_url = juego.imagen.url
     else:
         imagen_url = "Sin imagen disponible"
+
+
+    destinatarios = list(
+        Correos.objects.filter(
+            usuario__rol__rol__in=['Dueño', 'Administrador web']
+        ).values_list('correo', flat=True)
+    )
+    if not destinatarios:
+        print("No hay correos configurados para enviar la alerta.")
+        return
+
+    subject = f"Alerta: Stock bajo para el juego {juego.nombreJuego}"
+
+    if juego.imagen:
+        imagen_url = juego.imagen
+    else:
+        imagen_url = "Sin imagen disponible"
+
+
+
+
     message = (
         f"El juego '{juego.nombreJuego}' se está agotando.\n"
         f"Quedan menos de 5 unidades.\n"
@@ -716,8 +737,8 @@ def enviar_correo(juego_id):
     send_mail(
         subject,
         message,
-        'sebastiannayar25@gmail.com',           # Remitente: tu gmail autenticado en SMTP
-        ['sebastian.nayar@hotmail.com'],        # Destinatario: cualquier correo, por ejemplo Hotmail
+        settings.DEVELOPER_EMAIL,           # Remitente: tu gmail autenticado en SMTP
+        destinatarios,        # Destinatario: cualquier correo, por ejemplo Hotmail
         fail_silently=False,
     )
 
@@ -1187,10 +1208,15 @@ def editar_correo(request, correo_id):
         form = CorreosForm(request.POST, instance=correo)
         if form.is_valid():
             form.save()
-            return redirect('gestionar_correos')
+            return redirect('gestion_usuarios')
     else:
         form = CorreosForm(instance=correo)
-    return render(request, 'editar_correo.html', {'form': form})
+    return render(request, 'usuarios/gestionar_correos.html', {
+        'form': form,
+        'correos': Correos.objects.select_related('usuario').all(),
+            'modo_edicion': True,
+        'correo_editado': correo,
+    })
 
 def eliminar_correo(request, correo_id):
     correo = get_object_or_404(Correos, pk=correo_id)
