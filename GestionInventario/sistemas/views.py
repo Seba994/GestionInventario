@@ -1,6 +1,7 @@
 import os
 import re
 import time
+import openpyxl
 from multiprocessing import context
 from pyexpat.errors import messages
 from re import search
@@ -8,6 +9,7 @@ from urllib.parse import quote
 from django.shortcuts import get_object_or_404, render, redirect
 from django.core.paginator import Paginator
 from django.core.mail import send_mail
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -24,11 +26,15 @@ from rest_framework.response import Response
 from supabase import create_client, Client
 from GestionInventario.settings import SUPABASE_URL, SUPABASE_KEY
 from django.views.decorators.http import require_POST
+from .mixins import RolRequeridoMixin
 
 
 
 # Inicializar el cliente de Supabase
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+@login_required(login_url='login')
+@rol_requerido('dueño')  # Solo dueños pueden crear personal
 
 def crear_personal(request):
     if request.method == 'POST':
@@ -44,6 +50,9 @@ def crear_personal(request):
     return render(request, 'Registros/crear_personal.html', 
                   {'form': form})
 
+@login_required(login_url='login')
+@rol_requerido('dueño')  # Solo dueños pueden crear roles
+
 def crear_rol(request):
     if request.method == 'POST':
         form = RolForm(request.POST)
@@ -57,6 +66,7 @@ def crear_rol(request):
 
 @login_required(login_url='login')
 @rol_requerido('dueño')  # Solo permite acceso a usuarios con rol "dueño"
+
 def gestion_usuarios(request):
     usuarios_data = []
 
@@ -81,6 +91,8 @@ def gestion_usuarios(request):
 
 @login_required(login_url='login')
 @rol_requerido('dueño')
+@rol_requerido('dueño')  # Solo dueños pueden modificar roles
+
 def modificar_usuario(request, id):
     usuario = get_object_or_404(User, id=id)
     personal = get_object_or_404(Personal, usuario=usuario)
@@ -100,6 +112,8 @@ def modificar_usuario(request, id):
         'personal': personal,
         'is_editing': True
     })
+@login_required(login_url='login')
+@rol_requerido('dueño')  # Solo dueños pueden eliminar usuarios
 
 @login_required(login_url='login')
 @rol_requerido('dueño')
@@ -155,6 +169,8 @@ def modificar_rol(request, id):
     })
 
 # Vista para registrar nuevas consolas
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')  # Dueño y bodeguero pueden registrar consolas
 def registrar_consola(request):
     if request.method == 'POST':
         form = ConsolaForm(request.POST)
@@ -172,6 +188,8 @@ def lista_consolas(request):
     return render(request, 'consolas/lista.html', {'consolas': consolas})
 
 # Vista para registrar nuevas ubicación
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')  # Dueño y bodeguero pueden registrar ubicaciones
 def registrar_ubicacion(request):
     if request.method == 'POST':
         form = UbicacionForm(request.POST)
@@ -181,6 +199,9 @@ def registrar_ubicacion(request):
     else:
         form = UbicacionForm()
     return render(request, 'Registros/registrar_ubicaciones.html', {'form': form})
+
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')  # Dueño y bodeguero pueden editar ubicaciones
 
 def agregar_varias_ubicaciones(request):
     if request.method == 'POST':
@@ -240,6 +261,7 @@ def sanitize_filename(filename):
 
 # Vista para registrar juego
 @login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def registrar_juego(request):
     if request.method == 'POST':
         form = JuegoForm(request.POST, request.FILES)
@@ -302,6 +324,8 @@ def detalle_juego(request, pk):
     ), pk=pk)
     return render(request, 'Editar/detalle_juego.html', {'juego': juego})
 
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def eliminar_juego(request, pk):
     juego = get_object_or_404(Juego, pk=pk)
     if request.method == 'POST':
@@ -441,6 +465,8 @@ def listar_juegos_con_stock(request):
         'current_filters': current_filters,
     })
 
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def modificar_juego_id(request, id):
     juego = get_object_or_404(Juego, id=id)
 
@@ -502,6 +528,8 @@ def modificar_juego_id(request, id):
         'juego': juego
     })
 
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def modificar_juego_codbarra(request, codigoDeBarra):
     juego = get_object_or_404(Juego, codigoDeBarra=codigoDeBarra)
     
@@ -556,6 +584,7 @@ def obtener_clasificaciones(request):
     return JsonResponse(list(clasificaciones), safe=False)
 
 @login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def gestionar_stock(request, id):
     juego = get_object_or_404(Juego, pk=id)
     stocks = Stock.objects.filter(juego=juego)
@@ -566,6 +595,7 @@ def gestionar_stock(request, id):
     })
 
 @login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def agregar_stock(request, juego_id):
     juego = get_object_or_404(Juego, id=juego_id)
     ubicaciones = Ubicacion.objects.all()
@@ -604,6 +634,8 @@ def agregar_stock(request, juego_id):
         'ubicaciones': ubicaciones
     })
 
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def subir_imagen(request):
     if request.method == 'POST' and request.FILES['imagen']:
         imagen = request.FILES['imagen']
@@ -647,6 +679,7 @@ def upload_image_to_supabase(file_obj, file_name, bucket='img-juegos'):
         }
 
 @login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def restar_stock(request, juego_id, stock_id):
     stock = get_object_or_404(Stock, idStock=stock_id, juego__id=juego_id)
 
@@ -744,7 +777,8 @@ def enviar_correo(juego_id):
 
 
 @require_POST
-@login_required
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def eliminar_alerta_stock(request, juego_id):
     AlertaStock.objects.filter(juego_id=juego_id).delete()
     return JsonResponse({'ok': True})
@@ -754,6 +788,8 @@ def obtener_stock_total_juego(juego_id):
     total = Stock.objects.filter(juego_id=juego_id).aggregate(Sum('cantidad'))['cantidad__sum']
     return total or 0
 
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def editar_ubicacion(request, id):
     ubicacion = get_object_or_404(Ubicacion, idUbicacion=id)
 
@@ -770,7 +806,8 @@ def editar_ubicacion(request, id):
         'ubicacion': ubicacion,
         'titulo': 'Editar Ubicación'
     })
-
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def eliminar_ubicacion(request, id):
     ubicacion = get_object_or_404(Ubicacion, pk=id)
     
@@ -796,6 +833,7 @@ def buscar_ubicaciones(termino):
     return Ubicacion.objects.all()
 
 @login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def cambiar_ubicacion_juego(request, juego_id):
     juego = get_object_or_404(Juego, pk=juego_id)
     stocks_actuales = Stock.objects.filter(juego=juego)
@@ -846,6 +884,7 @@ def cambiar_ubicacion_juego(request, juego_id):
     })
 
 @login_required(login_url='login')
+@rol_requerido('dueño')
 def ver_movimientos_stock(request):
     # Filtros
     fecha_inicio = request.GET.get('fecha_inicio')
@@ -879,11 +918,13 @@ def ver_movimientos_stock(request):
     return render(request, 'reportes/movimientos_stock.html', context)
 
 @login_required(login_url='login')
+@rol_requerido('dueño')
 def ver_cambios_juegos(request):
     cambios = CambioJuego.objects.select_related('juego', 'usuario').order_by('-fecha')
     return render(request, 'reportes/cambios_juegos.html', {'cambios': cambios})
 
 @login_required(login_url='login')
+@rol_requerido('dueño')
 def estadisticas_stock(request):
     # Período de tiempo (últimos 30 días por defecto)
     dias = int(request.GET.get('dias', 30))
@@ -921,6 +962,8 @@ from django.template.loader import get_template
 from xhtml2pdf import pisa
 from io import BytesIO
 
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def generar_pdf_movimientos(request):
     # Obtener los mismos filtros que en ver_movimientos_stock
     fecha_inicio = request.GET.get('fecha_inicio')
@@ -1022,7 +1065,7 @@ def generar_pdf_inventario(request):
     
     return response
 
-@login_required
+@login_required(login_url='login')
 def listar_juegos_descontinuados(request):
     # Obtener el estado "Descontinuado"
     estado_descontinuado = get_object_or_404(Estado, nombreEstado='Descontinuado')
@@ -1073,37 +1116,9 @@ def reactivar_juego(request, pk):
         'juego': juego
     })
     
-@login_required
-@require_POST
-def eliminar_devolucion(request, id):
-    devolucion = get_object_or_404(Devolucion, id=id)
-    
-    try:
-        stock = Stock.objects.filter(
-            juego=devolucion.juego,
-            ubicacion=devolucion.ubicacion_destino
-        ).first()
-        
-        if stock:
-            stock.cantidad -= devolucion.cantidad
-            stock.save()
-        
-        MovimientoStock.objects.filter(
-            juego=devolucion.juego,
-            ubicacion=devolucion.ubicacion_destino,
-            cantidad=devolucion.cantidad,
-            tipo_movimiento='DEVOLUC'
-        ).delete()
-        
-        devolucion.delete()
-        
-        messages.success(request, 'Devolución eliminada correctamente.')
-    except Exception as e:
-        messages.error(request, f'Error al eliminar la devolución: {str(e)}')
-    
-    return redirect('listar_devoluciones')
 
-@login_required
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def registrar_devolucion(request):
     if request.method == 'POST':
         form = DevolucionForm(request.POST)
@@ -1150,37 +1165,46 @@ def registrar_devolucion(request):
         'titulo': 'Registrar Nueva Devolución'
     })
     
-@login_required
+
 @require_POST
+@login_required(login_url='login')
+@rol_requerido('dueño')
 def eliminar_devolucion(request, id):
     devolucion = get_object_or_404(Devolucion, id=id)
-    
     try:
         stock = Stock.objects.filter(
             juego=devolucion.juego,
             ubicacion=devolucion.ubicacion_destino
         ).first()
-        
-        if stock:
+
+        # Validar que haya suficiente stock para revertir la devolución
+        if stock and stock.cantidad >= devolucion.cantidad:
             stock.cantidad -= devolucion.cantidad
             stock.save()
-        
+        else:
+            raise ValidationError("No se puede eliminar: el stock real es menor que la devolución.")
+
+        # Eliminar el movimiento de stock asociado
         MovimientoStock.objects.filter(
             juego=devolucion.juego,
             ubicacion=devolucion.ubicacion_destino,
             cantidad=devolucion.cantidad,
             tipo_movimiento='DEVOLUC'
         ).delete()
-        # Eliminar la devolucion
+
+        # Eliminar la devolución
         devolucion.delete()
-        
         messages.success(request, 'Devolución eliminada correctamente.')
+
+    except ValidationError as e:
+        messages.error(request, f"❌ {str(e)}")
     except Exception as e:
-        messages.error(request, f'Error al eliminar la devolución: {str(e)}')
-    
+        messages.error(request, f'Error inesperado al eliminar la devolución: {str(e)}')
+
     return redirect('listar_devoluciones')
 
-@login_required
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
 def listar_devoluciones(request):
     devoluciones = Devolucion.objects.select_related(
         'juego', 'ubicacion_destino', 'usuario'
@@ -1228,3 +1252,113 @@ def eliminar_correo(request, correo_id):
 def listar_correos(request):
     correos = Correos.objects.select_related('usuario').all()
     return render(request, 'usuarios/listar_correos.html', {'correos': correos})
+    
+
+@login_required(login_url='login')
+@rol_requerido('dueño')
+
+
+def exportar_inventario_agregado_a_excel(request):
+    # 1. Obtener y agregar los datos (Stock total por juego)
+    juegos_con_stock = Juego.objects.annotate(
+        stock_total_calculado=Sum('stocks__cantidad')
+    ).order_by('nombreJuego')
+
+    # 2. Configurar la respuesta
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = 'attachment; filename="reporte_inventario_total.xlsx"'
+
+    # 3. Crear el libro y hoja
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = 'Inventario Total'
+
+    # 4. Escribir encabezados
+    columns = ['Código de Barra', 'Nombre del Juego', 'Consola', 'Clasificación', 'Stock Total']
+    worksheet.append(columns)
+
+    # 5. Escribir los datos
+    for juego in juegos_con_stock:
+        stock = juego.stock_total_calculado if juego.stock_total_calculado is not None else 0
+        row = [
+            juego.codigoDeBarra or '', 
+            juego.nombreJuego,
+            juego.consola.nombreConsola,
+            juego.clasificacion.descripcionClasificacion,
+            stock
+        ]
+        worksheet.append(row)
+
+    workbook.save(response)
+    return response
+
+
+def exportar_movimientos_a_excel(request):
+    # 1. Aplicar los Filtros del Request.GET (Copiando la lógica de tu vista principal)
+    movimientos = MovimientoStock.objects.select_related(
+        'juego', 'ubicacion', 'usuario__usuario' 
+    ).order_by('-fecha')
+
+    filtros = Q()
+    
+    fecha_inicio_str = request.GET.get('fecha_inicio')
+    fecha_fin_str = request.GET.get('fecha_fin')
+
+    if fecha_inicio_str:
+        try:
+            fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+            filtros &= Q(fecha__gte=fecha_inicio)
+        except ValueError:
+            pass
+            
+    if fecha_fin_str:
+        try:
+            fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
+            fecha_fin_siguiente = fecha_fin + timedelta(days=1)
+            filtros &= Q(fecha__lt=fecha_fin_siguiente)
+        except ValueError:
+            pass
+
+    tipo = request.GET.get('tipo')
+    if tipo in ['ENTRADA', 'SALIDA', 'DEVOLUC']: # Asumo que 'DEVOLUC' es un tipo válido si lo usas
+        filtros &= Q(tipo_movimiento=tipo)
+
+    juego_id_str = request.GET.get('juego')
+    if juego_id_str and juego_id_str.isdigit():
+        filtros &= Q(juego_id=int(juego_id_str))
+
+    movimientos_filtrados = movimientos.filter(filtros)
+    
+    # 2. Configurar la respuesta
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    filename = "movimientos_filtrados.xlsx" if filtros else "movimientos_completos.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    # 3. Crear el libro y hoja
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = 'Movimientos de Stock'
+
+    # 4. Escribir encabezados
+    columns = ['Fecha y Hora', 'Tipo', 'Juego', 'Ubicación', 'Cantidad', 'Registrado por', 'Observación']
+    worksheet.append(columns)
+
+    # 5. Escribir los datos
+    for mov in movimientos_filtrados:
+        row = [
+            mov.fecha.strftime('%d/%m/%Y %H:%M'), 
+            mov.get_tipo_movimiento_display(),
+            mov.juego.nombreJuego,
+            mov.ubicacion.nombreUbicacion,
+            mov.cantidad,
+            mov.usuario.nombre, 
+            mov.observacion or '-'
+        ]
+        worksheet.append(row)
+
+    workbook.save(response)
+    return response

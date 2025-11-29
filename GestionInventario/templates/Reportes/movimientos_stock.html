@@ -54,24 +54,29 @@
         </div>
     </div>
 
-    <!-- Botón para descargar PDF -->
-    <div class="row mb-4">
-        <div class="col-12 text-end">
-            <a href="{% url 'generar_pdf_movimientos' %}?{{ request.GET.urlencode }}" 
-               class="btn btn-danger">
-                <i class="fas fa-file-pdf me-2"></i>Descargar PDF
-            </a>
-        </div>
-    </div>
+<div class="row mb-4">
+    <div class="col-12 text-end">
+        <a href="{% url 'exportar_movimientos_excel_filtrado' %}?{{ request.GET.urlencode }}" 
+            class="btn btn-success me-2">
+            <i class="fas fa-file-excel me-2"></i>Exportar Movimientos
+        </a>
+        
+        <a href="{% url 'exportar_inventario_total_excel' %}" 
+            class="btn btn-success me-2">
+            <i class="fas fa-file-excel me-2"></i> Exportar Inventario Excel
+        </a>
+        
+        <a href="{% url 'generar_pdf_movimientos' %}?{{ request.GET.urlencode }}" 
+            class="btn btn-danger me-2">
+            <i class="fas fa-file-pdf me-2"></i>Descargar PDF
+        </a>
 
-    <!-- Botón para descargar inventario completo -->
-    <div class="row mb-4">
-        <div class="col-12 text-end">
-            <a href="{% url 'generar_pdf_inventario' %}" class="btn btn-danger">
-                <i class="fas fa-file-pdf me-2"></i>Descargar Inventario Completo
-            </a>
-        </div>
+        <a href="{% url 'generar_pdf_inventario' %}" 
+            class="btn btn-danger">
+            <i class="fas fa-file-pdf me-2"></i>Descargar Inventario a PDF
+        </a>
     </div>
+</div>
     <!-- Tabla de movimientos -->
     <div class="table-responsive">
         <table class="table table-striped">
