@@ -66,8 +66,11 @@ urlpatterns = [
     path('reportes/inventario/pdf/', views.generar_pdf_inventario, name='generar_pdf_inventario'),
     path('juegos/descontinuados/', views.listar_juegos_descontinuados, name='listar_juegos_descontinuados'),
     path('juego/reactivar/<int:pk>/', views.reactivar_juego, name='reactivar_juego'),
-    path('juegos/registrar_devolucion/', views.registrar_devolucion, name='registrar_devolucion'),
-    path('juegos/listar/', views.listar_devoluciones, name='listar_devoluciones'),
-    path('eliminar_alerta_stock/<int:juego_id>/', views.eliminar_alerta_stock, name='eliminar_alerta_stock'),
+    path('devoluciones/registrar/', views.registrar_devolucion, name='registrar_devolucion'),
+    path('devoluciones/', views.listar_devoluciones, name='listar_devoluciones'),
     path('devoluciones/eliminar/<int:id>/', views.eliminar_devolucion, name='eliminar_devolucion'),
+    path('eliminar_alerta_stock/<int:juego_id>/', views.eliminar_alerta_stock, name='eliminar_alerta_stock'),
+    path('reportes/movimientos/excel/', views.exportar_movimientos_a_excel, name='exportar_movimientos_excel'),path('reportes/movimientos/excel/', views.exportar_movimientos_a_excel, name='exportar_movimientos_excel_filtrado'),
+    path('exportar/inventario/total/excel/', views.exportar_inventario_agregado_a_excel, name='exportar_inventario_total_excel'),
+    
 ]
