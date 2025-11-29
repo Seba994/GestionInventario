@@ -86,8 +86,8 @@
             </div>
         </div>
         
-        <!-- Tarjeta de Administración - SOLO DUEÑO Y BODEGUERO -->
-        {% if puede_modificar_inventario %}
+        <!-- Tarjeta de Administración-->
+        {% if is_dueño or is_bodeguero or is_admin_web %}
         <div class="col-md-4 mb-4">
             <div class="card h-100 shadow">
                 <div class="card-header bg-success text-white">
@@ -95,33 +95,40 @@
                 </div>
                 <div class="card-body">
                     <ul class="list-group list-group-flush">
-                        <!-- Gestionar ubicaciones - DUEÑO Y BODEGUERO -->
+
+                        <!-- Gestionar ubicaciones - dueño + bodeguero -->
+                        {% if is_dueño or is_bodeguero %}
                         <li class="list-group-item">
                             <a href="{% url 'lista_ubicaciones' %}" class="text-decoration-none">
                                 <i class="fas fa-map-marker-alt me-2"></i> Gestionar ubicaciones
                             </a>
                         </li>
-                        
-                        <!-- Gestionar usuarios - SOLO DUEÑO -->
-                        {% if is_dueño %}
+                        {% endif %}
+
+                        <!-- Gestionar usuarios - dueño + admin web -->
+                        {% if is_dueño or is_admin_web %}
                         <li class="list-group-item">
                             <a href="{% url 'gestion_usuarios' %}" class="text-decoration-none">
                                 <i class="fas fa-users me-2"></i> Gestionar usuarios
                             </a>
                         </li>
                         {% endif %}
-                        
-                        <!-- Agregar consola - DUEÑO Y BODEGUERO -->
+
+                        <!-- Agregar consola - dueño + bodeguero -->
+                        {% if is_dueño or is_bodeguero %}
                         <li class="list-group-item">
                             <a href="{% url 'registrar_consola' %}" class="text-decoration-none">
                                 <i class="fas fa-gamepad me-2"></i> Agregar consola
                             </a>
                         </li>
+                        {% endif %}
+
                     </ul>
                 </div>
             </div>
         </div>
         {% endif %}
+
         
         <!-- Tarjeta de Reportes - SOLO DUEÑO -->
         {% if is_dueño %}
@@ -185,6 +192,21 @@
         </div>
     </div>
     {% endif %}
+
+    {% if is_admin_web %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-secondary">
+                    <h5><i class="fas fa-user-shield me-2"></i>Información para Administrador Web</h5>
+                    <p class="mb-0">
+                        Tu rol de <strong>Administrador Web</strong> te permite gestionar usuarios del sistema 
+                        pero no realizar acciones de inventario o stock.
+                    </p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
 
     <footer class="mt-5 pt-3 text-center text-muted">
         <p>Sistema de Inventario &copy; {% now "Y" %}</p>
