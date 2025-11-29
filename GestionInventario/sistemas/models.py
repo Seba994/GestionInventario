@@ -29,6 +29,14 @@ class Personal(models.Model):
     def __str__(self):
         return str(self.nombre)
 
+class Correos(models.Model):
+    nombre = models.CharField(max_length=100)
+    correo = models.EmailField(max_length=254, unique=True)
+    usuario = models.ForeignKey(Personal, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.nombre} <{self.correo}>"
+
 class Ubicacion(models.Model):
     """Modelo que define las ubicaciones de los juegos en el inventario."""
     idUbicacion = models.AutoField(primary_key=True)

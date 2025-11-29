@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+{% load correos_tags %}
 {% block title %}Gestión de Usuarios | {{ block.super }}{% endblock %}
 
 {% block content %}
@@ -58,4 +58,57 @@
         </div>
     </div>
 </div>
-{% endblock %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    
+<h1 class="h2">Gestión notificaiones automaticas</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'gestionar_correos' %}" class="btn btn-primary">
+            <i class="fas fa-user-plus me-1"></i> Agregar correo
+        </a>
+    </div>
+</div>
+
+<tbody>
+    <div class="card mt-4">
+    <div class="card-body">
+        <h3>Lista de correos</h3>
+        <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Usuario</th>
+                <th>Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% obtener_correos as correos %}
+            {% for correo in correos %}
+            <tr>
+                <td>{{ correo.nombre }}</td>
+                <td>{{ correo.correo }}</td>
+                <td>{{ correo.usuario.nombre }}</td>
+                <td>
+                <a href="{% url 'editar_correo' correo.id %}" class="btn btn-sm btn-success">
+                    <i class="fas fa-edit"></i> Editar
+                </a>
+                <form method="post" action="{% url 'eliminarcorreo' correo.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash-alt"></i> Eliminar
+                    </button>
+                </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    </div>
+
+</tbody>
+
+
+    {% endblock %}

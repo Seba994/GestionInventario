@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Personal, Rol , Ubicacion, Consola, Juego, Estado, Clasificacion, Descripcion, Distribucion, Stock, Devolucion
+from .models import Personal, Rol , Ubicacion, Consola, Juego, Estado, Clasificacion, Descripcion, Distribucion, Stock, Devolucion, Correos
 import logging
 class PersonalForm(UserCreationForm):
     
@@ -359,3 +359,15 @@ class DevolucionForm(forms.ModelForm):
             raise forms.ValidationError("La cantidad debe ser mayor a cero")
         return cantidad
         
+from django import forms
+from .models import Correos
+
+class CorreosForm(forms.ModelForm):
+    class Meta:
+        model = Correos
+        fields = ['nombre', 'correo', 'usuario']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'correo': forms.EmailInput(attrs={'class': 'form-control'}),
+            'usuario': forms.Select(attrs={'class': 'form-select'}),
+        }
