@@ -8,17 +8,40 @@
         </a>
         <!-- 🔹 Información del juego -->
         <div class="row mb-4">
-            <div class="col-md-3">
-                <img src="{{ juego.imagen }}" class="img-fluid rounded shadow" alt="Imagen del juego">
+            <div class="row mb-4">
+
+                <!-- Columna de la imagen -->
+                <div class="col-md-3">
+
+                    {% if juego.imagen %}
+                        <img src="{{ juego.imagen }}" class="img-fluid rounded shadow mb-2" alt="Imagen del juego">
+                        <a href="{% url 'cambiar_imagen_juego' juego.id %}" class="btn btn-warning w-100 mt-2">
+                            <i class="fas fa-image"></i> Cambiar imagen
+                        </a>
+                    {% else %}
+                        <div class="text-center py-5 bg-light rounded shadow mb-2">
+                            <i class="fas fa-gamepad fa-3x text-muted"></i>
+                            <p class="mt-2">Sin imagen</p>
+                        </div>
+                        <a href="{% url 'cambiar_imagen_juego' juego.id %}" class="btn btn-success w-100 mt-2">
+                            <i class="fas fa-image"></i> Agregar imagen
+                        </a>
+                    {% endif %}
+
+                </div>
+
+                <!-- Columna de detalles -->
+                <div class="col-md-9">
+                    <h2>{{ juego.nombreJuego }}</h2>
+                    <p><strong>Código de Barra:</strong> {{ juego.codigoDeBarra }}</p>
+                    <p><strong>Consola:</strong> {{ juego.consola }}</p>
+                    <p><strong>Distribución:</strong> {{ juego.distribucion }}</p>
+                    <p><strong>Clasificación:</strong> {{ juego.clasificacion }}</p>
+                    <p><strong>Descripción:</strong> {{ juego.descripcion }}</p>
+                </div>
+
             </div>
-            <div class="col-md-9">
-                <h2>{{ juego.nombreJuego }}</h2>
-                <p><strong>Código de Barra:</strong> {{ juego.codigoDeBarra }}</p>
-                <p><strong>Consola:</strong> {{ juego.consola }}</p>
-                <p><strong>Distribución:</strong> {{ juego.distribucion }}</p>
-                <p><strong>Clasificación:</strong> {{ juego.clasificacion }}</p>
-                <p><strong>Descripcion:</strong> {{ juego.descripcion }}</p>
-            </div>
+
 
        </div>
 

@@ -371,3 +371,7 @@ class CorreosForm(forms.ModelForm):
             'correo': forms.EmailInput(attrs={'class': 'form-control'}),
             'usuario': forms.Select(attrs={'class': 'form-select'}),
         }
+
+
+class CambiarImagenForm(forms.Form):
+    imagen = forms.ImageField(required=True)

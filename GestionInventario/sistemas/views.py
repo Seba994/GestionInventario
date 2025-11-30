@@ -18,7 +18,7 @@ from django.http import  JsonResponse, HttpResponse
 from django.db.models import Q, Sum, Count, OuterRef, Subquery
 from django.db.models.functions import TruncDate
 from datetime import datetime, timedelta
-from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm, DevolucionForm, CorreosForm
+from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm, DevolucionForm, CorreosForm, CambiarImagenForm
 from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion, MovimientoStock, CambioJuego, Devolucion, AlertaStock, Correos
 from .decorators import rol_requerido
 from rest_framework.decorators import api_view
@@ -27,6 +27,7 @@ from supabase import create_client, Client
 from GestionInventario.settings import SUPABASE_URL, SUPABASE_KEY
 from django.views.decorators.http import require_POST
 from .mixins import RolRequeridoMixin
+from .utils import delete_image_from_supabase, upload_image_to_supabase
 
 
 
@@ -644,7 +645,7 @@ def subir_imagen(request):
             return JsonResponse({"error": resultado['error']['message']})
 
 #subir imagenes al bucket de supabase
-def upload_image_to_supabase(file_obj, file_name, bucket='img-juegos'):
+def upload_image_to_supabase(file_obj, file_name, bucket='gestionInventario'):
     try:
        
         # Lee el archivo en memoria
@@ -1359,3 +1360,39 @@ def exportar_movimientos_a_excel(request):
 
     workbook.save(response)
     return response
+
+
+def cambiar_imagen_juego(request, pk):
+    juego = get_object_or_404(Juego, pk=pk)
+
+    if request.method == "POST":
+        form = CambiarImagenForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            nueva_imagen = request.FILES["imagen"]
+
+            # Si ya tenía imagen → eliminarla del bucket
+            if juego.imagen:
+                delete_image_from_supabase(juego.imagen)
+
+            # Subir nueva imagen
+            url = upload_image_to_supabase(nueva_imagen)
+
+            if url is None:
+                messages.error(request, "Error subiendo la imagen a Supabase.")
+                return redirect("cambiar_imagen_juego", pk=juego.id)
+
+            juego.imagen = url
+            juego.save()
+
+            messages.success(request, "Imagen actualizada correctamente.")
+            return redirect("detalle_juego", pk=juego.id)
+
+    else:
+        form = CambiarImagenForm()
+
+    return render(request, "Editar/cambiar_imagen_juego.html", {
+        "juego": juego,
+        "form": form
+    })
+
