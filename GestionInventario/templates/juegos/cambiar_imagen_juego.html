@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Cambiar Imagen - {{ juego.nombreJuego }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <a href="{% url 'detalle_juego' juego.id %}" class="btn btn-secondary mb-3">
+        <i class="fas fa-arrow-left"></i> Volver
+    </a>
+
+    <h2>Cambiar imagen de {{ juego.nombreJuego }}</h2>
+
+    <div class="row mt-4">
+        <div class="col-md-4">
+            {% if juego.imagen %}
+                <img src="{{ juego.imagen }}" class="img-fluid rounded shadow" alt="Imagen actual">
+                <p class="mt-2 text-muted">Imagen actual</p>
+            {% else %}
+                <div class="text-center py-5 bg-light rounded shadow">
+                    <i class="fas fa-image fa-3x text-muted"></i>
+                    <p class="mt-2">Sin imagen actual</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-8">
+            <form method="post" enctype="multipart/form-data" class="p-4 border rounded shadow-sm bg-white">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    {{ form.imagen.label_tag }}
+                    {{ form.imagen }}
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-upload"></i> Subir nueva imagen
+                </button>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

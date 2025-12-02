@@ -18,7 +18,7 @@ from django.http import  JsonResponse, HttpResponse
 from django.db.models import Q, Sum, Count, OuterRef, Subquery
 from django.db.models.functions import TruncDate
 from datetime import datetime, timedelta
-from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm, DevolucionForm, CorreosForm
+from .forms import PersonalForm, RolForm, ConsolaForm, UbicacionForm, JuegoForm, ModificarJuegoForm, ModificarRolUsuarioForm, ModificarPersonalForm, CambiarUbicacionForm, DevolucionForm, CorreosForm, CambiarImagenForm
 from .models import Personal, Consola, Ubicacion, Juego, Stock, Rol, Estado, Distribucion, Clasificacion, MovimientoStock, CambioJuego, Devolucion, AlertaStock, Correos
 from .decorators import rol_requerido
 from rest_framework.decorators import api_view
@@ -27,6 +27,8 @@ from supabase import create_client, Client
 from GestionInventario.settings import SUPABASE_URL, SUPABASE_KEY
 from django.views.decorators.http import require_POST
 from .mixins import RolRequeridoMixin
+from .utils import delete_image_from_supabase, upload_image_to_supabase, upload_or_replace_game_image
+import uuid
 
 
 
@@ -642,38 +644,6 @@ def subir_imagen(request):
             return JsonResponse({"url": resultado.get('path')})
         else:
             return JsonResponse({"error": resultado['error']['message']})
-
-#subir imagenes al bucket de supabase
-def upload_image_to_supabase(file_obj, file_name, bucket='img-juegos'):
-    try:
-       
-        # Lee el archivo en memoria
-        file_data = file_obj.read()
-        file_obj.seek(0)
-        
-        # Sube el archivo a Supabase
-        response = supabase.storage.from_(bucket).upload(
-            path=file_name,
-            file=file_data,
-            file_options={"content-type": file_obj.content_type}
-        )
-        
-        # Obtener la URL pública
-        public_url = supabase.storage.from_(bucket).get_public_url(file_name)
-        
-        print(f"URL generada: {public_url}")  # Para debugging
-        
-        return {
-            "success": True,
-            "path": public_url
-        }
-        
-    except Exception as e:
-        print(f"Error detallado al subir imagen: {str(e)}")
-        return {
-            "success": False,
-            "error": str(e)
-        }
 
 @login_required(login_url='login')
 @rol_requerido('dueño', 'bodeguero')
@@ -1359,3 +1329,31 @@ def exportar_movimientos_a_excel(request):
 
     workbook.save(response)
     return response
+
+@login_required(login_url='login')
+@rol_requerido('dueño', 'bodeguero')
+
+def cambiar_imagen_juego(request, pk):
+    juego = get_object_or_404(Juego, pk=pk)
+
+    if request.method == "POST":
+        form = CambiarImagenForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            nueva_imagen = form.cleaned_data["imagen"]
+            nombre_limpio = sanitize_filename(nueva_imagen.name)
+            try:
+                # Usa la utilidad centralizada
+                url = upload_or_replace_game_image(juego, nueva_imagen, nombre_limpio)
+                messages.success(request, "Imagen actualizada correctamente.")
+                return redirect("detalle_juego", pk=juego.id)
+            except Exception as e:
+                messages.error(request, f"Error al actualizar la imagen: {e}")
+                return redirect("cambiar_imagen_juego", pk=juego.id)
+    else:
+        form = CambiarImagenForm()
+
+    return render(request, "juegos/cambiar_imagen_juego.html", {
+        "juego": juego,
+        "form": form
+    })

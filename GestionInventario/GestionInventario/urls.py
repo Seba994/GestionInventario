@@ -72,5 +72,7 @@ urlpatterns = [
     path('eliminar_alerta_stock/<int:juego_id>/', views.eliminar_alerta_stock, name='eliminar_alerta_stock'),
     path('reportes/movimientos/excel/', views.exportar_movimientos_a_excel, name='exportar_movimientos_excel'),path('reportes/movimientos/excel/', views.exportar_movimientos_a_excel, name='exportar_movimientos_excel_filtrado'),
     path('exportar/inventario/total/excel/', views.exportar_inventario_agregado_a_excel, name='exportar_inventario_total_excel'),
+    path("juegos/<int:pk>/cambiar-imagen/", views.cambiar_imagen_juego, name="cambiar_imagen_juego"),
+
     
 ]
